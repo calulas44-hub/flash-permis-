@@ -63,6 +63,11 @@
     set('phone', s.phone, 'À renseigner dans l’administration');
     set('email', s.email, 'À renseigner dans l’administration');
     set('hours', s.hours, 'À renseigner dans l’administration');
+    const lg = s.legal;
+    if (lg) {
+      const legal = $('#legal-line');
+      if (legal) legal.textContent = lg.name + ' — ' + lg.form + ' au capital de ' + lg.capital + ' · SIREN ' + lg.siren + ' · SIRET ' + lg.siret + ' · TVA ' + lg.tva + ' · APE ' + lg.ape;
+    }
   }
 
   function renderCodeChart() {

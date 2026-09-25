@@ -111,10 +111,21 @@
         city: 'Gardanne',
         cp: '13120',
         tagline: 'Votre permis ? En un flash.',
-        address: '',
+        address: '13 boulevard Carnot',
         phone: '',
         email: '',
-        hours: ''
+        hours: '',
+        // Informations légales officielles (source : INSEE / INPI — SIREN 994 121 408)
+        legal: {
+          name: 'FLASH PERMIS',
+          form: 'SARL',
+          capital: '500 €',
+          siren: '994 121 408',
+          siret: '994 121 408 00011',
+          tva: 'FR05 994 121 408',
+          ape: '85.53Z — Enseignement de la conduite',
+          rcs: 'Aix-en-Provence'
+        }
       },
       formations: [
         {
@@ -404,10 +415,23 @@
   function readRaw() {
     try { const s = localStorage.getItem(KEY); return s ? JSON.parse(s) : null; } catch (e) { return null; }
   }
+  // Complète le contenu stocké avec les valeurs officielles par défaut
+  // sans écraser une information déjà saisie dans l'administration.
+  function mergeContent(stored) {
+    if (!stored) return defaultContent();
+    const def = defaultContent();
+    stored.school = stored.school || {};
+    Object.keys(def.school).forEach((k) => {
+      if (k === 'legal') { stored.school.legal = Object.assign({}, def.school.legal, stored.school.legal || {}); return; }
+      if (stored.school[k] == null || stored.school[k] === '') stored.school[k] = def.school[k];
+    });
+    if (!stored.formations) stored.formations = def.formations;
+    return stored;
+  }
   function load() {
     const raw = readRaw();
     if (raw && raw.v === 1 && raw.data && raw.data.seededOn === todayISO()) {
-      db = raw.data; db.content = raw.content || defaultContent();
+      db = raw.data; db.content = mergeContent(raw.content);
       return;
     }
     // Nouvelle journée (ou première visite) : on régénère un planning frais,
@@ -417,7 +441,7 @@
       const mine = raw.data.inscriptions.filter((i) => i.userCreated);
       fresh.inscriptions = mine.concat(fresh.inscriptions);
     }
-    db = fresh; db.content = (raw && raw.content) || defaultContent();
+    db = fresh; db.content = mergeContent(raw && raw.content);
     save(true);
   }
   function save(silent) {
@@ -432,7 +456,7 @@
   global.addEventListener('storage', (e) => {
     if (e.key !== KEY) return;
     const raw = readRaw();
-    if (raw && raw.data) { db = raw.data; db.content = raw.content || defaultContent(); listeners.forEach((fn) => fn()); }
+    if (raw && raw.data) { db = raw.data; db.content = mergeContent(raw.content); listeners.forEach((fn) => fn()); }
   });
 
   load();
