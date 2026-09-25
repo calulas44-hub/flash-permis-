@@ -13,6 +13,17 @@ Aucune installation ni compilation : le site est en HTML, CSS et JavaScript.
 - **Recommandé** (serveur local) : `npx serve .` puis ouvrir l’adresse indiquée.
 - **En ligne** : le dossier peut être publié tel quel (GitHub Pages, Netlify, hébergement mutualisé…).
 
+### Déployer sur Netlify
+
+Le fichier `netlify.toml` est déjà configuré (aucune commande de build, dossier publié : la racine).
+
+1. Sur [app.netlify.com](https://app.netlify.com) : **Add new site › Import an existing project › GitHub**.
+2. Choisir le dépôt `flash-permis-` et la branche à publier.
+3. Laisser les réglages proposés (ils sont lus dans `netlify.toml`) puis **Deploy**.
+
+Chaque nouveau commit sur la branche redéploie automatiquement le site.
+Alternative sans GitHub : glisser-déposer le dossier du projet sur [app.netlify.com/drop](https://app.netlify.com/drop).
+
 ## Pages
 
 | Page | Rôle |
