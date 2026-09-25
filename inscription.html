@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Pré-inscription en ligne · Flash PERMIS Gardanne</title>
+  <meta name="description" content="Pré-inscrivez-vous en ligne chez Flash PERMIS, auto-école à Gardanne. L’équipe vous recontacte pour finaliser votre inscription.">
+  <meta name="theme-color" content="#0a0f1f">
+  <link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
+  <link rel="preload" href="assets/fonts/plus-jakarta-sans-normal-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="assets/css/fonts.css">
+  <link rel="stylesheet" href="assets/css/base.css">
+  <link rel="stylesheet" href="assets/css/site.css">
+  <style>
+    .insc { background: var(--bg); padding: 0 0 96px; }
+    .insc-grid { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: 28px; align-items: start; margin-top: -48px; position: relative; z-index: 2; }
+    .insc-form { padding: 32px; border-radius: var(--r-xl); box-shadow: var(--sh-2); }
+    .insc-form h2 { font-size: 20px; letter-spacing: -0.02em; display: flex; align-items: center; gap: 10px; }
+    .insc-form h2 span { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; background: var(--night); color: var(--volt); font-size: 14px; }
+    .fieldset { border: 0; padding: 0; margin: 0 0 30px; display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .fieldset legend { grid-column: 1 / -1; margin-bottom: 16px; padding: 0; }
+    .fieldset .full { grid-column: 1 / -1; }
+    .radio-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .radio-card { position: relative; display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-radius: 16px; border: 1.5px solid var(--line); background: var(--surface); cursor: pointer; font-weight: 700; transition: all 0.15s; }
+    .radio-card input { position: absolute; opacity: 0; }
+    .radio-card:has(input:checked) { border-color: var(--night); background: var(--volt-wash); box-shadow: 0 0 0 3px var(--volt-soft); }
+    .radio-card:has(input:focus-visible) { outline: 3px solid var(--volt); outline-offset: 2px; }
+    .radio-card small { display: block; font-weight: 600; color: var(--muted); font-size: 12.5px; }
+    .dispo { display: flex; flex-wrap: wrap; gap: 8px; }
+    .dispo label { cursor: pointer; }
+    .dispo input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+    .dispo input:checked + .chip { background: var(--night); border-color: var(--night); color: #fff; }
+    .dispo input:focus-visible + .chip { outline: 3px solid var(--volt); outline-offset: 2px; }
+    .parent-box { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr; gap: 16px; padding: 20px; border-radius: 20px; background: var(--info-bg); border: 1px solid #cfdcff; }
+    .parent-box .full { grid-column: 1 / -1; }
+    .parent-box p { grid-column: 1 / -1; font-size: 13.5px; color: var(--info); font-weight: 600; display: flex; gap: 8px; align-items: center; }
+    .consent { display: flex; gap: 12px; align-items: flex-start; font-size: 13.5px; color: var(--ink-2); cursor: pointer; }
+    .consent input { width: 20px; height: 20px; margin-top: 1px; accent-color: var(--night); flex: none; }
+    .aside-poster { border-radius: var(--r-xl); overflow: hidden; box-shadow: var(--sh-3); aspect-ratio: 2 / 3; max-height: 560px; width: 100%; }
+    .aside-poster img { width: 100%; height: 100%; object-fit: cover; object-position: center 30%; }
+    .how { margin-top: 18px; }
+    .how ol { list-style: none; margin: 14px 0 0; padding: 0; display: flex; flex-direction: column; gap: 14px; }
+    .how li { display: flex; gap: 12px; align-items: flex-start; font-size: 14.5px; font-weight: 600; }
+    .how li span { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: var(--volt); font-weight: 800; font-size: 13px; flex: none; }
+    .how li small { display: block; color: var(--muted); font-weight: 500; font-size: 13px; }
+    .success { text-align: center; padding: 48px 28px; }
+    .success .success-ic { display: grid; place-items: center; width: 84px; height: 84px; margin: 0 auto 22px; border-radius: 50%; background: var(--ok); color: #fff; animation: pop-in 0.4s var(--ease); }
+    .success .success-ic .i { width: 42px; height: 42px; stroke-width: 3; }
+    .success h2 { font-size: clamp(22px, 3vw, 28px); letter-spacing: -0.03em; line-height: 1.3; max-width: 560px; margin: 0 auto; }
+    .success p { color: var(--muted); margin-top: 12px; }
+    .success .row { justify-content: center; margin-top: 26px; flex-wrap: wrap; }
+    .simple-header { position: absolute; inset: 0 0 auto 0; z-index: 5; }
+    .simple-header .header-inner { justify-content: space-between; }
+    @media (max-width: 960px) { .insc-grid { grid-template-columns: 1fr; } .insc-aside { order: -1; display: grid; grid-template-columns: 160px 1fr; gap: 16px; align-items: start; } .aside-poster { max-height: 240px; } .how { margin-top: 0; } }
+    @media (max-width: 640px) { .insc-form { padding: 22px 18px; } .fieldset, .parent-box { grid-template-columns: 1fr; } .radio-cards { grid-template-columns: 1fr; } .insc-aside { grid-template-columns: 1fr; } .aside-poster { display: none; } .simple-header .btn-glass span { display: none; } }
+  </style>
+</head>
+<body class="site">
+  <header class="simple-header">
+    <div class="container header-inner">
+      <a class="logo on-dark" href="index.html" aria-label="Flash PERMIS Gardanne — accueil"><span class="logo-word"><span class="logo-l1">FL<svg class="logo-bolt" viewBox="0 0 20 30" aria-hidden="true"><path d="M13.5 0 1 17.2h7.3L5.6 30 19 11.6h-7.6L13.5 0z"/></svg>SH</span><span class="logo-l2">PERMIS</span></span><span class="logo-city"><span>Auto-école</span><span>Gardanne</span></span></a>
+      <a class="btn btn-glass btn-sm" href="index.html"><i data-i="left"></i><span>Retour au site</span></a>
+    </div>
+  </header>
+
+  <section class="page-hero on-dark">
+    <div class="hero-fx" aria-hidden="true"></div>
+    <div class="container" style="padding-bottom:40px">
+      <span class="eyebrow"><i data-i="edit"></i>Pré-inscription en ligne · 2 minutes</span>
+      <h1>Votre permis commence ici.</h1>
+      <p class="lead">Envoyez votre demande de pré-inscription à Flash PERMIS. Notre équipe à Gardanne vous recontacte pour finaliser votre dossier.</p>
+    </div>
+  </section>
+
+  <main class="insc">
+    <div class="container insc-grid">
+      <div class="card insc-form" id="form-card">
+        <form id="insc-form" novalidate>
+          <fieldset class="fieldset">
+            <legend><h2><span>1</span>Vos informations</h2></legend>
+            <label class="field"><span>Prénom *</span><input class="input" name="first" autocomplete="given-name" required></label>
+            <label class="field"><span>Nom *</span><input class="input" name="last" autocomplete="family-name" required></label>
+            <label class="field"><span>Téléphone *</span><input class="input" name="phone" type="tel" autocomplete="tel" inputmode="tel" placeholder="06 00 00 00 00" required></label>
+            <label class="field"><span>E-mail *</span><input class="input" name="email" type="email" autocomplete="email" placeholder="vous@exemple.fr" required></label>
+            <label class="field"><span>Date de naissance *</span><input class="input" name="birth" type="date" autocomplete="bday" required></label>
+            <div class="field"><span>Statut *</span>
+              <div class="radio-cards" role="radiogroup" aria-label="Statut">
+                <label class="radio-card"><input type="radio" name="minor" value="0" checked>Majeur</label>
+                <label class="radio-card"><input type="radio" name="minor" value="1">Mineur</label>
+              </div>
+            </div>
+            <div class="parent-box" id="parent-box" hidden>
+              <p><i data-i="users"></i>Coordonnées du parent ou représentant légal</p>
+              <label class="field full"><span>Nom et prénom du parent *</span><input class="input" name="pname" autocomplete="off"></label>
+              <label class="field"><span>Téléphone du parent *</span><input class="input" name="pphone" type="tel" inputmode="tel"></label>
+              <label class="field"><span>E-mail du parent *</span><input class="input" name="pemail" type="email"></label>
+            </div>
+          </fieldset>
+
+          <fieldset class="fieldset">
+            <legend><h2><span>2</span>Votre formation</h2></legend>
+            <label class="field full"><span>Formation souhaitée *</span><select class="select" name="formation" id="formation" required></select></label>
+            <div class="field full"><span>Vos disponibilités</span>
+              <div class="dispo" id="dispo"></div>
+            </div>
+            <label class="field full"><span>Message <em class="hint">(facultatif)</em></span><textarea class="textarea" name="message" placeholder="Une question, une contrainte d’horaire…"></textarea></label>
+          </fieldset>
+
+          <label class="consent"><input type="checkbox" name="consent" required><span>J’accepte que Flash PERMIS utilise ces informations pour me recontacter au sujet de mon inscription. *</span></label>
+          <p class="err" id="consent-err" hidden>Merci de cocher cette case pour envoyer votre demande.</p>
+          <div class="row-between wrap" style="margin-top:24px">
+            <span class="small muted">* Champs obligatoires</span>
+            <button class="btn btn-primary btn-lg" type="submit"><i data-i="send"></i>Envoyer ma pré-inscription</button>
+          </div>
+        </form>
+      </div>
+
+      <aside class="insc-aside">
+        <figure class="aside-poster" style="margin:0"><img src="assets/img/campagne-flash-permis-683.webp" width="683" height="1024" alt="Campagne Flash PERMIS : « Votre permis ? En un flash. »" loading="lazy"></figure>
+        <div class="card how">
+          <span class="card-kicker">Comment ça se passe ?</span>
+          <ol>
+            <li><span>1</span><div>Vous envoyez votre demande<small>En ligne, en 2 minutes.</small></div></li>
+            <li><span>2</span><div>L’équipe vous recontacte<small>Pour répondre à vos questions.</small></div></li>
+            <li><span>3</span><div>Vous finalisez votre dossier<small>Avec l’agence Flash PERMIS à Gardanne.</small></div></li>
+            <li><span>4</span><div>Votre espace élève s’ouvre<small>Livret, planning, code : tout est suivi.</small></div></li>
+          </ol>
+        </div>
+      </aside>
+    </div>
+  </main>
+
+  <script src="assets/js/store.js"></script>
+  <script src="assets/js/ui.js"></script>
+  <script src="assets/js/inscription.js"></script>
+</body>
+</html>

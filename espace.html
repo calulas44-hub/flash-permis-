@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Espace Flash PERMIS · Connexion et visite guidée</title>
+  <meta name="description" content="Accédez aux espaces Flash PERMIS : élève, parents, moniteur et administration.">
+  <meta name="theme-color" content="#0a0f1f">
+  <meta name="robots" content="noindex">
+  <link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
+  <link rel="preload" href="assets/fonts/plus-jakarta-sans-normal-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="assets/css/fonts.css">
+  <link rel="stylesheet" href="assets/css/base.css">
+  <link rel="stylesheet" href="assets/css/site.css">
+  <link rel="stylesheet" href="assets/css/app.css">
+  <style>
+    .hub { background: var(--bg); padding: 0 0 96px; }
+    .hub-top { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 24px; margin-top: -56px; position: relative; z-index: 2; align-items: stretch; }
+    .role-card { display: flex; flex-direction: column; gap: 14px; padding: 24px; border-radius: var(--r-lg); background: var(--surface); border: 1px solid var(--line); box-shadow: var(--sh-1); transition: transform 0.2s var(--ease), box-shadow 0.2s, border-color 0.2s; }
+    .role-card:hover { transform: translateY(-4px); box-shadow: var(--sh-2); border-color: var(--night); }
+    .role-ic { display: grid; place-items: center; width: 52px; height: 52px; border-radius: 16px; background: var(--night); color: var(--volt); }
+    .role-ic .i { width: 25px; height: 25px; }
+    .role-card h3 { font-size: 19px; }
+    .role-card p { color: var(--muted); font-size: 14px; }
+    .role-card .who { display: flex; align-items: center; gap: 10px; padding-top: 14px; border-top: 1px solid var(--line-2); margin-top: auto; font-size: 13.5px; font-weight: 700; }
+    .role-card .who span { color: var(--muted); font-weight: 600; font-size: 12.5px; display: block; }
+    .role-card .who .i { margin-left: auto; width: 18px; height: 18px; }
+    .role-card.primary { background: var(--volt); border-color: var(--volt-2); }
+    .role-card.primary p, .role-card.primary .who span { color: rgba(10, 15, 31, 0.7); }
+    .role-card.primary .who { border-color: rgba(10, 15, 31, 0.12); }
+    .login-card { padding: 28px; border-radius: var(--r-xl); box-shadow: var(--sh-2); display: flex; flex-direction: column; gap: 14px; }
+    .login-card h2 { font-size: 22px; letter-spacing: -0.02em; }
+    .pitch { background: var(--night); color: #fff; border-radius: var(--r-xl); padding: 40px; position: relative; overflow: hidden; isolation: isolate; }
+    .pitch::after { content: ''; position: absolute; inset: 0; z-index: -1; background: radial-gradient(50% 80% at 100% 0%, rgba(255, 212, 0, 0.22), transparent 60%); }
+    .pitch h2 { font-family: var(--f-display); font-weight: 800; font-size: clamp(26px, 3.4vw, 42px); letter-spacing: -0.035em; line-height: 1.1; max-width: 820px; }
+    .pitch h2 span { color: var(--volt); }
+    .pitch p { color: rgba(255, 255, 255, 0.72); max-width: 680px; margin-top: 16px; font-size: 17px; }
+    .pitch-cols { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 30px; }
+    .pitch-cols div { background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 18px; padding: 18px; }
+    .pitch-cols strong { display: block; font-size: 15.5px; margin-bottom: 4px; }
+    .pitch-cols span { font-size: 13.5px; color: rgba(255, 255, 255, 0.65); }
+    .scenario { counter-reset: sc; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+    .sc { background: var(--surface); border: 1px solid var(--line); border-radius: 20px; padding: 20px; display: flex; flex-direction: column; gap: 10px; }
+    .sc-n { font-family: var(--f-display); font-style: italic; font-weight: 900; font-size: 28px; color: var(--volt-2); line-height: 1; }
+    .sc strong { font-size: 16px; }
+    .sc p { color: var(--muted); font-size: 14px; }
+    .sc .btn { margin-top: auto; align-self: flex-start; }
+    .simple-header { position: absolute; inset: 0 0 auto 0; z-index: 5; }
+    .simple-header .header-inner { justify-content: space-between; }
+    @media (max-width: 1024px) { .hub-top { grid-template-columns: 1fr; } .scenario { grid-template-columns: 1fr 1fr; } .pitch-cols { grid-template-columns: 1fr; } }
+    @media (max-width: 640px) { .scenario { grid-template-columns: 1fr; } .pitch { padding: 26px 20px; } .simple-header .btn-glass span { display: none; } }
+  </style>
+</head>
+<body class="site">
+  <header class="simple-header">
+    <div class="container header-inner">
+      <a class="logo on-dark" href="index.html" aria-label="Flash PERMIS Gardanne — accueil"><span class="logo-word"><span class="logo-l1">FL<svg class="logo-bolt" viewBox="0 0 20 30" aria-hidden="true"><path d="M13.5 0 1 17.2h7.3L5.6 30 19 11.6h-7.6L13.5 0z"/></svg>SH</span><span class="logo-l2">PERMIS</span></span><span class="logo-city"><span>Auto-école</span><span>Gardanne</span></span></a>
+      <a class="btn btn-glass btn-sm" href="index.html"><i data-i="left"></i><span>Retour au site</span></a>
+    </div>
+  </header>
+
+  <section class="page-hero on-dark">
+    <div class="hero-fx" aria-hidden="true"></div>
+    <div class="container" style="padding-bottom:56px">
+      <span class="eyebrow"><i data-i="lock"></i>Espace Flash PERMIS</span>
+      <h1>Un espace pour chacun. Une seule plateforme.</h1>
+      <p class="lead">Élève, parents, moniteurs et administration partagent les mêmes informations, en temps réel. Choisissez un espace pour découvrir la démonstration.</p>
+    </div>
+  </section>
+
+  <main class="hub">
+    <div class="container">
+      <div class="hub-top">
+        <div class="role-grid" style="grid-template-columns:repeat(2,minmax(0,1fr))">
+          <a class="role-card primary" href="eleve.html"><span class="role-ic"><i data-i="user"></i></span><h3>Espace élève</h3><p>Progression, livret, planning, propositions de créneaux, code et documents.</p><span class="who"><span class="avatar avatar-sm av-blue">LM</span><div>Lucas Martin<span>Permis B · 17 ans</span></div><i data-i="arrow"></i></span></a>
+          <a class="role-card" href="parent.html"><span class="role-ic"><i data-i="heart"></i></span><h3>Espace parents</h3><p>Suivre la progression, les leçons et le code, sans être derrière le volant.</p><span class="who"><span class="avatar avatar-sm av-rose">SM</span><div>Sophie Martin<span>Mère de Lucas</span></div><i data-i="arrow"></i></span></a>
+          <a class="role-card" href="moniteur.html"><span class="role-ic"><i data-i="wheel"></i></span><h3>Espace moniteur</h3><p>Planning du jour et mise à jour du livret en quelques clics, depuis le téléphone.</p><span class="who"><span class="avatar avatar-sm av-blue">JR</span><div>Julien R.<span>Moniteur</span></div><i data-i="arrow"></i></span></a>
+          <a class="role-card" href="admin.html"><span class="role-ic"><i data-i="layout"></i></span><h3>Administration</h3><p>Élèves, moniteurs, planning, validations, progression, code, parents et contenus.</p><span class="who"><span class="avatar avatar-sm av-night">FP</span><div>Gérant / secrétariat<span>Flash PERMIS Gardanne</span></div><i data-i="arrow"></i></span></a>
+        </div>
+        <form class="card login-card" id="login" novalidate>
+          <span class="card-kicker">Connexion</span>
+          <h2>Accéder à mon espace</h2>
+          <label class="field"><span>E-mail</span><input class="input" type="email" id="login-email" placeholder="vous@exemple.fr" autocomplete="username"></label>
+          <label class="field"><span>Mot de passe</span><input class="input" type="password" id="login-pass" placeholder="••••••••" autocomplete="current-password"></label>
+          <button class="btn btn-dark btn-lg" type="submit">Se connecter</button>
+          <p class="note note-volt"><i data-i="sparkles"></i><span><strong>Démonstration :</strong> aucun compte n’est nécessaire. Choisissez directement un profil à gauche. Dans la version finale, chaque utilisateur dispose de ses propres identifiants.</span></p>
+        </form>
+      </div>
+
+      <div class="section-title" style="margin-top:56px"><h3 style="font-size:24px">Visite guidée — 5 minutes</h3><button class="btn btn-ghost btn-sm" id="reset"><i data-i="refresh"></i>Réinitialiser la démo</button></div>
+      <p class="muted" style="margin:-4px 0 18px">Astuce : ouvrez deux espaces dans deux onglets côte à côte — les mises à jour sont synchronisées en direct.</p>
+      <div class="scenario">
+        <div class="sc"><span class="sc-n">01</span><strong>L’élève propose un créneau</strong><p>Dans l’espace de Lucas, renseignez ses disponibilités puis proposez un créneau compatible.</p><a class="btn btn-ghost btn-sm" href="eleve.html#planning">Espace élève<i data-i="arrow"></i></a></div>
+        <div class="sc"><span class="sc-n">02</span><strong>L’agence valide</strong><p>Le secrétariat reçoit la notification et accepte, refuse ou propose un autre créneau.</p><a class="btn btn-ghost btn-sm" href="admin.html#planning">Administration<i data-i="arrow"></i></a></div>
+        <div class="sc"><span class="sc-n">03</span><strong>Le moniteur termine la leçon</strong><p>Depuis son téléphone, Julien valide les compétences de Lucas et ajoute une remarque.</p><a class="btn btn-ghost btn-sm" href="moniteur.html">Espace moniteur<i data-i="arrow"></i></a></div>
+        <div class="sc"><span class="sc-n">04</span><strong>La progression évolue</strong><p>La jauge de Lucas augmente, la remarque et les notifications apparaissent instantanément.</p><a class="btn btn-ghost btn-sm" href="eleve.html#progression">Livret de Lucas<i data-i="arrow"></i></a></div>
+        <div class="sc"><span class="sc-n">05</span><strong>Les parents suivent</strong><p>Sophie voit la leçon terminée, les compétences validées et la prochaine leçon.</p><a class="btn btn-ghost btn-sm" href="parent.html">Espace parents<i data-i="arrow"></i></a></div>
+        <div class="sc"><span class="sc-n">06</span><strong>Une pré-inscription arrive</strong><p>Remplissez le formulaire du site : la demande apparaît dans l’administration et peut devenir un dossier élève.</p><a class="btn btn-ghost btn-sm" href="inscription.html">Pré-inscription<i data-i="arrow"></i></a></div>
+      </div>
+
+      <div class="pitch" style="margin-top:56px">
+        <span class="kicker kicker-dark"><i data-i="bolt"></i>Pour le gérant de Flash PERMIS</span>
+        <h2>Vos élèves veulent la simplicité du digital.<br><span>Flash PERMIS leur apporte également l’humain.</span></h2>
+        <p>Aussi moderne qu’une plateforme en ligne. Aussi humaine qu’une auto-école locale. Le digital d’une grande plateforme, l’accompagnement de Flash PERMIS à Gardanne.</p>
+        <div class="pitch-cols">
+          <div><strong>Vous gardez le contrôle</strong><span>Aucun créneau n’est réservé sans validation de l’agence. La décision de présentation à l’examen reste la vôtre.</span></div>
+          <div><strong>Moins d’appels, plus de sérénité</strong><span>Élèves et parents trouvent l’information eux-mêmes : progression, planning, remarques, résultats.</span></div>
+          <div><strong>Une identité forte et locale</strong><span>« Votre permis ? En un flash. » — une marque moderne, ancrée à Gardanne.</span></div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="assets/js/store.js"></script>
+  <script src="assets/js/ui.js"></script>
+  <script>
+    FP.hydrate(document);
+    document.getElementById('login').addEventListener('submit', function (e) { e.preventDefault(); FP.toast('Démonstration : choisissez un profil pour entrer dans un espace.', 'info'); });
+    document.getElementById('reset').addEventListener('click', function () { FP.store.reset(); FP.toast('Démo réinitialisée : toutes les données fictives ont été régénérées.'); });
+  </script>
+</body>
+</html>
