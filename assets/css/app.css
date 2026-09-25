@@ -12,6 +12,8 @@
 .side-role { display: inline-flex; align-items: center; gap: 8px; align-self: flex-start; margin: 0 8px; padding: 6px 11px; border-radius: 99px; background: rgba(255, 212, 0, 0.12); color: var(--volt); font-size: 12.5px; font-weight: 800; }
 .side-role .i { width: 15px; height: 15px; }
 .side-nav { display: flex; flex-direction: column; gap: 2px; }
+.side-group { font-size: 10.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; color: rgba(255, 255, 255, 0.38); padding: 16px 12px 5px; }
+.side-group:first-child { padding-top: 4px; }
 .side-link { display: flex; align-items: center; gap: 12px; padding: 11px 12px; border-radius: 13px; color: rgba(255, 255, 255, 0.72); font-weight: 600; font-size: 14.5px; transition: background 0.15s, color 0.15s; position: relative; }
 .side-link .i { width: 19px; height: 19px; }
 .side-link:hover { background: rgba(255, 255, 255, 0.06); color: #fff; }
@@ -451,3 +453,148 @@
 .role-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
 @media (max-width: 1100px) { .role-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 560px) { .role-grid { grid-template-columns: 1fr; } }
+
+/* ==========================================================================
+   Gestion : accès, historique, documents, paiements, caisse
+   ========================================================================== */
+
+/* ---------- Écran de déverrouillage ---------- */
+.lock-screen { min-height: 100vh; display: grid; place-items: center; padding: 24px; background: var(--night); position: relative; isolation: isolate; }
+.lock-screen::before { content: ''; position: absolute; inset: 0; z-index: -1; background: radial-gradient(55% 55% at 50% 0%, rgba(255, 212, 0, 0.18), transparent 65%); }
+.lock-card { width: 100%; max-width: 420px; background: var(--surface); border-radius: var(--r-xl); padding: 34px 30px; box-shadow: var(--sh-3); text-align: center; }
+.lock-ic { display: grid; place-items: center; width: 62px; height: 62px; margin: 0 auto 18px; border-radius: 20px; background: var(--night); color: var(--volt); }
+.lock-ic .i { width: 28px; height: 28px; }
+.lock-card h1 { font-size: 22px; letter-spacing: -0.025em; }
+.lock-card p { color: var(--muted); font-size: 14.5px; margin-top: 8px; }
+.lock-card .input { text-align: center; font-size: 22px; letter-spacing: 0.22em; font-weight: 700; margin-top: 22px; min-height: 58px; }
+.lock-card .btn { margin-top: 12px; }
+.lock-err { color: var(--danger); font-weight: 700; font-size: 13.5px; margin-top: 10px; }
+.lock-back { display: inline-flex; align-items: center; gap: 6px; margin-top: 18px; color: var(--muted); font-size: 13.5px; font-weight: 600; }
+
+/* ---------- Historique (timeline) ---------- */
+.timeline { display: flex; flex-direction: column; }
+.tl { display: grid; grid-template-columns: 34px minmax(0, 1fr); column-gap: 14px; position: relative; padding-bottom: 16px; }
+.tl:last-child { padding-bottom: 0; }
+.tl::before { content: ''; position: absolute; left: 16px; top: 32px; bottom: 0; width: 2px; background: var(--line); }
+.tl:last-child::before { display: none; }
+.tl-ic { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 11px; background: var(--line-2); color: var(--ink-2); z-index: 1; }
+.tl-ic .i { width: 17px; height: 17px; }
+.tl-inscription { background: var(--night); color: var(--volt); }
+.tl-document { background: var(--info-bg); color: var(--info); }
+.tl-payment { background: var(--ok-bg); color: var(--ok); }
+.tl-slot { background: var(--volt-soft); color: var(--night); }
+.tl-skill { background: #f1ebff; color: #6d3fe0; }
+.tl-lesson { background: var(--night); color: #fff; }
+.tl-dossier { background: var(--warn-bg); color: var(--warn); }
+.tl-body strong { display: block; font-size: 14.5px; font-weight: 600; line-height: 1.45; }
+.tl-meta { font-size: 12.5px; color: var(--muted); font-weight: 600; margin-top: 2px; }
+.tl-date { font-variant-numeric: tabular-nums; }
+
+/* ---------- Documents ---------- */
+.doc-card { border: 1px solid var(--line); border-radius: 18px; padding: 14px; display: flex; gap: 14px; align-items: flex-start; background: var(--surface); }
+.doc-thumb { width: 60px; height: 76px; border-radius: 10px; background: var(--line-2); display: grid; place-items: center; flex: none; overflow: hidden; border: 1px solid var(--line); }
+.doc-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.doc-thumb .i { width: 24px; height: 24px; color: var(--muted); }
+.doc-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.doc-main strong { font-size: 15px; }
+.doc-main .muted { font-size: 12.5px; }
+.doc-actions { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
+.doc-reason { background: var(--danger-bg); color: var(--danger); border-radius: 10px; padding: 8px 11px; font-size: 13px; font-weight: 600; display: flex; gap: 8px; }
+.doc-reason .i { width: 15px; height: 15px; flex: none; margin-top: 2px; }
+.drop { border: 2px dashed var(--line); border-radius: 16px; padding: 22px; text-align: center; transition: all 0.15s; cursor: pointer; display: block; }
+.drop:hover, .drop.over { border-color: var(--night); background: var(--volt-wash); }
+.drop .i { width: 26px; height: 26px; color: var(--muted); margin-bottom: 6px; }
+.drop strong { display: block; font-size: 14.5px; }
+.drop span { font-size: 12.5px; color: var(--muted); }
+.doc-viewer { width: 100%; height: min(70vh, 640px); border: 1px solid var(--line); border-radius: 14px; background: var(--bg); }
+.doc-viewer img { width: 100%; height: 100%; object-fit: contain; }
+
+/* ---------- Paiements ---------- */
+.pay-methods { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.pay-method { display: flex; align-items: center; gap: 12px; padding: 14px; border-radius: 16px; border: 1.5px solid var(--line); background: var(--surface); font-weight: 700; font-size: 14.5px; text-align: left; transition: all 0.15s; }
+.pay-method:hover { border-color: var(--night); transform: translateY(-1px); }
+.pay-method .i { width: 22px; height: 22px; }
+.pay-method small { display: block; font-weight: 600; font-size: 12px; color: var(--muted); }
+.pay-method.dark { background: var(--night); color: #fff; border-color: var(--night); }
+.pay-method.dark small { color: rgba(255, 255, 255, 0.6); }
+@media (max-width: 520px) { .pay-methods { grid-template-columns: 1fr; } }
+.amount-hero { font-size: 44px; font-weight: 800; letter-spacing: -0.045em; line-height: 1; }
+.pay-row { display: flex; align-items: center; gap: 14px; padding: 14px 0; border-bottom: 1px solid var(--line-2); }
+.pay-row:last-child { border-bottom: 0; }
+.pay-row .grow { flex: 1; min-width: 0; }
+.pay-row strong { display: block; font-size: 14.5px; }
+.pay-row span { font-size: 12.5px; color: var(--muted); font-weight: 600; }
+.pay-amount { font-weight: 800; font-size: 16px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+/* ---------- Caisse / comptabilité ---------- */
+.period-bar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.acc-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; }
+.acc-tile { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 16px; }
+.acc-tile span { display: block; font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+.acc-tile strong { display: block; font-size: 25px; letter-spacing: -0.035em; margin-top: 4px; font-variant-numeric: tabular-nums; }
+.acc-tile.hero { background: var(--night); color: #fff; border-color: var(--night); }
+.acc-tile.hero span { color: rgba(255, 255, 255, 0.6); }
+.acc-tile.hero strong { font-size: 32px; }
+.acc-split { display: grid; grid-template-columns: 1fr; gap: 8px; }
+.acc-line { display: grid; grid-template-columns: minmax(0, 1fr) 90px 80px; gap: 10px; align-items: center; font-size: 14px; font-weight: 600; }
+.acc-line b { text-align: right; font-variant-numeric: tabular-nums; }
+
+/* ---------- Ticket de caisse ---------- */
+.ticket { width: 78mm; max-width: 100%; margin: 0 auto; background: #fff; color: #000; padding: 14px 16px; font-family: ui-monospace, 'SFMono-Regular', Menlo, monospace; font-size: 11.5px; line-height: 1.5; }
+.ticket .tk-head { text-align: center; display: flex; flex-direction: column; gap: 1px; }
+.ticket .tk-head strong { font-family: var(--f-display); font-style: italic; font-size: 19px; letter-spacing: -0.02em; }
+.ticket .tk-head span { font-size: 10.5px; }
+.ticket .tk-sep { border-top: 1px dashed #000; margin: 9px 0; }
+.ticket table { width: 100%; border-collapse: collapse; }
+.ticket td { padding: 1px 0; vertical-align: top; }
+.ticket td.r { text-align: right; white-space: nowrap; }
+.ticket td.b { font-weight: 700; font-size: 13.5px; }
+.ticket .tk-foot { text-align: center; font-size: 10px; margin-top: 10px; line-height: 1.45; }
+.ticket-preview { background: var(--bg); padding: 18px; border-radius: 16px; display: flex; justify-content: center; }
+.ticket-preview .ticket { box-shadow: var(--sh-2); }
+.tk-break { height: 18px; }
+
+/* Impression : uniquement la zone dédiée */
+.print-area { display: none; }
+@media print {
+  body.printing > *:not(.print-area) { display: none !important; }
+  body.printing .print-area { display: block; }
+  body.printing { background: #fff; }
+  .print-title { font-size: 16px; margin-bottom: 12px; text-align: center; font-family: sans-serif; }
+  .tk-break { height: 0; page-break-after: always; }
+  .ticket { width: 100%; box-shadow: none; }
+}
+
+/* ---------- Communications ---------- */
+.msg { display: flex; gap: 12px; padding: 13px 0; border-bottom: 1px solid var(--line-2); align-items: flex-start; }
+.msg:last-child { border-bottom: 0; }
+.msg-ic { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 11px; flex: none; }
+.msg-email { background: var(--info-bg); color: var(--info); }
+.msg-sms { background: var(--ok-bg); color: var(--ok); }
+.msg-ic .i { width: 18px; height: 18px; }
+.msg-body { flex: 1; min-width: 0; }
+.msg-body strong { display: block; font-size: 14px; }
+.msg-body p { font-size: 13px; color: var(--ink-2); white-space: pre-line; margin-top: 4px; line-height: 1.45; max-height: 4.4em; overflow: hidden; }
+.msg-body .muted { font-size: 12px; }
+.tpl { border: 1px solid var(--line); border-radius: 16px; padding: 14px; display: flex; gap: 12px; align-items: flex-start; }
+.tpl-main { flex: 1; min-width: 0; }
+.tpl-main strong { font-size: 14.5px; }
+.tpl-main p { font-size: 12.5px; color: var(--muted); margin-top: 3px; white-space: pre-line; max-height: 3em; overflow: hidden; }
+.vars { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
+.vars code { font-size: 11.5px; background: var(--line-2); padding: 2px 7px; border-radius: 6px; font-family: ui-monospace, monospace; }
+
+/* ---------- Offre ---------- */
+.offer-card { background: linear-gradient(135deg, var(--night), #1a2547); color: #fff; border-radius: var(--r-lg); padding: 24px; }
+.offer-card h3 { font-size: 20px; letter-spacing: -0.02em; }
+.offer-card p { color: rgba(255, 255, 255, 0.72); font-size: 14.5px; margin-top: 6px; }
+.offer-price { font-size: 40px; font-weight: 800; letter-spacing: -0.04em; margin: 14px 0 4px; }
+.offer-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 18px; }
+@media (max-width: 520px) { .offer-actions .btn { flex: 1; } }
+.instr-photo { width: 56px; height: 56px; border-radius: 18px; object-fit: cover; flex: none; }
+.instr-card.is-off { opacity: 0.62; }
+.table td.num, .table td .pay-amount { white-space: nowrap; }
+@media (max-width: 560px) {
+  .pay-row { flex-wrap: wrap; row-gap: 10px; }
+  .pay-row .grow { flex: 1 1 calc(100% - 56px); }
+  .pay-row .pay-amount { margin-left: 56px; }
+}

@@ -268,6 +268,14 @@
     return { el: wrap, close };
   };
 
+  // Toute navigation ferme les fenêtres encore ouvertes
+  global.addEventListener('hashchange', () => {
+    const open = $$('.modal-wrap');
+    if (!open.length) return;
+    open.forEach((w) => { w.classList.remove('in'); setTimeout(() => w.remove(), 200); });
+    document.body.classList.remove('no-scroll');
+  });
+
   /* ---------- Notifications ---------- */
   const NICON = { slot: 'calendar', lesson: 'car', comment: 'message', skill: 'checkCircle', code: 'book', inscription: 'user', info: 'info' };
   FP.notifItem = (n) => '<button class="notif ' + (n.read ? '' : 'is-unread') + '" data-notif="' + n.id + '" data-link="' + esc(n.link) + '">' +
@@ -303,7 +311,9 @@
   /* ---------- Coquille applicative (élève, parent, moniteur, admin) ---------- */
   FP.shell = (o) => {
     const root = document.getElementById('app');
-    const navHTML = (cls) => o.nav.map((n) => '<a class="' + cls + '" href="#' + n.id + '" data-route="' + n.id + '">' + icon(n.icon) + '<span>' + esc(n.label) + '</span><em class="nav-badge" data-badge="' + n.id + '" hidden></em></a>').join('');
+    const navHTML = (cls) => o.nav.map((n) => (n.group
+      ? '<p class="side-group">' + esc(n.group) + '</p>'
+      : '<a class="' + cls + '" href="#' + n.id + '" data-route="' + n.id + '">' + icon(n.icon) + '<span>' + esc(n.label) + '</span><em class="nav-badge" data-badge="' + n.id + '" hidden></em></a>')).join('');
     const tabs = o.nav.filter((n) => (o.tabs || []).includes(n.id));
     root.innerHTML =
       '<div class="app app-' + o.role + '">' +
@@ -331,7 +341,8 @@
 
     const view = $('#view');
     const side = $('.app');
-    const current = () => { const h = location.hash.replace('#', '').split('/')[0]; return o.nav.some((n) => n.id === h) || (o.hidden || []).includes(h) ? h : o.nav[0].id; };
+    const first = (o.nav.find((n) => n.id) || {}).id;
+    const current = () => { const h = location.hash.replace('#', '').split('/')[0]; return o.nav.some((n) => n.id === h) || (o.hidden || []).includes(h) ? h : first; };
     const param = () => location.hash.replace('#', '').split('/').slice(1).join('/');
 
     function badges() {

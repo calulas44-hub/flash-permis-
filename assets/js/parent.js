@@ -82,7 +82,7 @@
       '<div class="g g-main"><div class="stack"><div class="card"><div class="card-head"><span class="card-title">' + icon('clock') + 'Historique</span></div><div class="hist">' +
       q.history(SID).map((l) => V.histItem(l, { showComment: vis('remarques') && l.shareParent })).join('') + '</div></div></div>' +
       '<div class="stack"><div class="card"><div class="card-head"><span class="card-title">' + icon('calendar') + 'Prochaines leçons</span></div>' +
-      (vis('planning') ? '<div class="lessons">' + (q.upcoming(SID).map((l) => V.lessonRow(l)).join('') || '<p class="empty">Aucune leçon à venir.</p>') + '</div>' : hiddenInfo('Le planning')) + '</div>' + V.hoursCard(SID) + '</div></div>';
+      (vis('planning') ? '<div class="lessons">' + (q.upcoming(SID).map((l) => V.lessonRow(l, { action: '<button class="btn btn-ghost btn-xs" data-changeslot="' + l.id + '">' + icon('swap') + 'Autre horaire</button>' })).join('') || '<p class="empty">Aucune leçon à venir.</p>') + '</div>' : hiddenInfo('Le planning')) + '</div>' + V.hoursCard(SID) + '</div></div>';
   }
 
   function code(el) {
@@ -94,12 +94,30 @@
     FP.lineChart($('#p-chart'), c.series, { min: 15, max: 40, goal: 35, ticks: [15, 20, 25, 30, 35, 40], height: 250, aria: 'Évolution des résultats de code' });
   }
 
+  function documents(el) {
+    const s = q.student(SID);
+    el.innerHTML = '<div class="page-head"><div><h2>Documents de ' + esc(s.first) + '</h2><p>Déposez les pièces demandées par l’auto-école et suivez leur validation.</p></div></div>' +
+      FP.client.documentsView(SID, { possessive: 'le dossier de ' + s.first });
+  }
+
+  function paiements(el) {
+    const s = q.student(SID);
+    el.innerHTML = '<div class="page-head"><div><h2>Inscription & paiements</h2><p>Offre, règlements et reçus de ' + esc(s.first) + '.</p></div></div>' +
+      FP.client.paymentsView(SID, { canAnswer: false });
+  }
+
+  function historique(el) {
+    const s = q.student(SID);
+    el.innerHTML = '<div class="page-head"><div><h2>Historique</h2><p>Toutes les étapes du parcours de ' + esc(s.first) + '.</p></div></div>' +
+      '<div class="card">' + FP.timeline(q.events(SID), { limit: 60 }) + '</div>';
+  }
+
   function notifications(el) {
     el.innerHTML = '<div class="page-head"><div><h2>Notifications</h2><p>Vous êtes prévenu(e) des événements importants de la formation.</p></div><div class="page-actions"><button class="btn btn-ghost" data-readall>' + icon('check') + 'Tout marquer comme lu</button></div></div>' +
       '<div class="card"><div class="feed">' + (q.notifs(TO).map(FP.notifItem).join('') || '<p class="empty">Aucune notification.</p>') + '</div></div>';
   }
 
-  FP.shell({
+  const shell = FP.shell({
     role: 'parent', page: 'parent.html', roleLabel: 'Espace parents', roleIcon: 'heart',
     user: { first: 'Sophie', last: 'Martin', sub: 'Mère de Lucas', color: 'rose' },
     notifTo: TO,
@@ -108,12 +126,25 @@
       { id: 'competences', label: 'Compétences', short: 'Livret', icon: 'clipboard' },
       { id: 'lecons', label: 'Leçons', short: 'Leçons', icon: 'car' },
       { id: 'code', label: 'Code de la route', short: 'Code', icon: 'book' },
+      { id: 'paiements', label: 'Inscription & paiements', short: 'Paiement', icon: 'trophy', badge: () => q.payments(SID).filter((p) => p.status === 'attente').length },
+      { id: 'documents', label: 'Documents', short: 'Docs', icon: 'file', badge: () => q.docs(SID).filter((d) => d.status === 'manquant' || d.status === 'refuse').length },
+      { id: 'historique', label: 'Historique', short: 'Suivi', icon: 'clock' },
       { id: 'notifications', label: 'Notifications', short: 'Alertes', icon: 'bell', badge: () => q.unread(TO) }
     ],
-    tabs: ['apercu', 'competences', 'lecons', 'code', 'notifications'],
+    tabs: ['apercu', 'lecons', 'paiements', 'documents', 'notifications'],
     sideFoot: V.agencyCard(),
-    views: { apercu: guard(apercu), competences: guard(competences), lecons: guard(lecons), code: guard(code), notifications: guard(notifications) }
+    views: {
+      apercu: guard(apercu), competences: guard(competences), lecons: guard(lecons), code: guard(code),
+      paiements: guard(paiements), documents: guard(documents), historique: guard(historique), notifications: guard(notifications)
+    }
   });
 
-  document.addEventListener('click', (e) => { if (e.target.closest('[data-readall]')) act.markRead(TO); });
+  FP.client.handleUploads(() => shell.render(true));
+  FP.client.handlePayments(() => shell.render(true));
+
+  document.addEventListener('click', (e) => {
+    if (e.target.closest('[data-readall]')) act.markRead(TO);
+    const cs = e.target.closest('[data-changeslot]');
+    if (cs) FP.client.changeSlotModal(cs.dataset.changeslot, par().first + ' (parent)', () => shell.render(true));
+  });
 })();

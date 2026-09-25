@@ -56,7 +56,8 @@
       '<div class="stack mt">' +
       (l.status === 'terminee' ? '<div class="note">' + icon('checkCircle') + '<span>Leçon terminée, livret mis à jour.</span></div>'
         : '<a class="btn btn-primary btn-lg btn-block" href="#fin/' + l.id + '">' + icon('clipboard') + (l.status === 'a_completer' ? 'Compléter le livret' : 'Terminer la leçon') + '</a>') +
-      '<a class="btn btn-ghost btn-lg btn-block" href="#eleve/' + s.id + '">' + icon('user') + 'Ouvrir le dossier de ' + esc(s.first) + '</a></div>';
+      '<a class="btn btn-ghost btn-lg btn-block" href="#eleve/' + s.id + '">' + icon('user') + 'Ouvrir le dossier de ' + esc(s.first) + '</a>' +
+      (l.status === 'confirmee' ? '<button class="btn btn-ghost btn-lg btn-block" data-movem="' + l.id + '">' + icon('swap') + 'Déplacer la leçon</button>' : '') + '</div>';
   }
 
   /* ---------------- Fin de leçon / mise à jour du livret ---------------- */
@@ -149,6 +150,13 @@
     el.innerHTML = '<div class="m-hello"><div><h2>Demandes de créneaux</h2><p>' + pend.length + ' en attente de réponse</p></div></div>' +
       '<p class="note" style="margin-bottom:14px">' + icon('shield') + '<span>Aucune heure n’est réservée sans votre validation ou celle du secrétariat.</span></p>' +
       '<div class="stack">' + (pend.map((r) => V.reqItem(r, { showStudent: true, actions: V.reqActions(r) })).join('') || '<div class="card"><p class="empty">Aucune demande en attente. 👌</p></div>') + '</div>' +
+      (FP.store.db.lessons.filter((l) => l.instructor === IID && l.status === 'confirmee' && l.date >= D.todayISO()).length
+        ? '<div class="section-title"><h3>Déplacer une leçon</h3></div>' +
+          FP.store.db.lessons.filter((l) => l.instructor === IID && l.status === 'confirmee' && l.date >= D.todayISO()).slice(0, 6)
+            .map((l) => '<div class="m-lesson"><span class="m-time"><b>' + fmt.time(l.start) + '</b><span>' + fmt.relShort(l.date) + '</span></span>' +
+              '<span class="m-body"><strong>' + esc(q.fullName(q.student(l.student))) + '</strong><span>' + esc(l.theme) + '</span></span>' +
+              '<button class="btn btn-ghost btn-xs" data-movem="' + l.id + '" style="align-self:center">' + icon('swap') + 'Déplacer</button></div>').join('')
+        : '') +
       (recent.length ? '<div class="section-title"><h3>Récemment traitées</h3></div><div class="stack">' + recent.map((r) => V.reqItem(r, { showStudent: true })).join('') + '</div>' : '');
   }
 
@@ -183,8 +191,28 @@
     if (e.target.id === 'm-search') { search = e.target.value; const pos = e.target.selectionStart; shell.render(true); const i = $('#m-search'); if (i) { i.focus(); i.setSelectionRange(pos, pos); } }
   });
   document.addEventListener('change', (e) => { if (e.target.id === 'fl-share') flow.share = e.target.checked; });
+  function moveModal(lid) {
+    const l = FP.store.db.lessons.find((x) => x.id === lid); if (!l) return;
+    const s = q.student(l.student);
+    FP.modal({
+      title: 'Déplacer la leçon', sub: q.fullName(s) + ' · ' + fmt.day(l.date) + ' à ' + fmt.time(l.start),
+      body: '<div class="form-grid"><label class="field"><span>Nouvelle date</span><input class="input" type="date" id="mm-date" value="' + l.date + '"></label>' +
+        '<label class="field"><span>Nouvelle heure</span><input class="input" type="time" id="mm-time" step="1800" value="' + l.start + '"></label></div>' +
+        '<p class="note">' + icon('bell') + '<span>' + esc(s.first) + ', ses parents et le secrétariat seront prévenus automatiquement.</span></p>',
+      actions: [{ label: 'Annuler' }, { label: 'Déplacer', cls: 'btn-primary', icon: 'swap', onClick: (w) => {
+        const date = w.querySelector('#mm-date').value, time = w.querySelector('#mm-time').value;
+        if (!date || !time) { FP.toast('Renseignez la date et l’heure.', 'warn'); return false; }
+        const conflict = q.conflict(IID, l.student, date, time, l.duration);
+        if (conflict && !w.dataset.forced) { FP.toast('Conflit : ' + conflict + '. Confirmez pour forcer.', 'warn'); w.dataset.forced = '1'; return false; }
+        act.moveLesson(lid, { date, start: time }, q.instructor(IID).first + ' (moniteur)');
+        FP.toast('Leçon déplacée. L’élève a été notifié.');
+      } }]
+    });
+  }
+
   document.addEventListener('click', (e) => {
     const t = e.target;
+    const mm = t.closest('[data-movem]'); if (mm) { moveModal(mm.dataset.movem); return; }
     const d = t.closest('[data-day]'); if (d) { day = d.dataset.day; shell.render(true); return; }
     const tri = t.closest('[data-tri]');
     if (tri) {

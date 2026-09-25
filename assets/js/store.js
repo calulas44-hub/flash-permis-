@@ -177,9 +177,9 @@
     const W = dow(T) === 0 ? addDays(T, -1) : T;
 
     const instructors = [
-      { id: 'julien', first: 'Julien', last: 'R.', color: 'blue', role: 'Moniteur · Permis B, AAC', hours: { 1: [[8, 12], [13, 19]], 2: [[8, 12], [13, 19]], 3: [[8, 12], [13, 19]], 4: [[8, 12], [13, 19]], 5: [[8, 12], [13, 19]], 6: [[8, 12]] } },
-      { id: 'sarah', first: 'Sarah', last: 'M.', color: 'violet', role: 'Monitrice · Permis B, boîte auto', hours: { 2: [[8, 12], [13, 19]], 3: [[8, 12], [13, 19]], 4: [[8, 12], [13, 19]], 5: [[8, 12], [13, 19]], 6: [[8, 13]] } },
-      { id: 'karim', first: 'Karim', last: 'B.', color: 'teal', role: 'Moniteur · Permis B, passerelle', hours: { 1: [[8, 12], [13, 19]], 2: [[8, 12], [13, 19]], 3: [[8, 12], [13, 19]], 4: [[8, 12], [13, 19]], 5: [[8, 12], [13, 18]] } }
+      { id: 'julien', first: 'Julien', last: 'R.', color: 'blue', role: 'Moniteur · Permis B, AAC', active: true, phone: '06 •• •• •• 11', email: 'julien@flashpermis-gardanne.fr', licence: 'A •• •• •• 001', vehicle: 'Clio V — AA-000-AA', types: ['Permis B', 'Conduite accompagnée'], hours: { 1: [[8, 12], [13, 19]], 2: [[8, 12], [13, 19]], 3: [[8, 12], [13, 19]], 4: [[8, 12], [13, 19]], 5: [[8, 12], [13, 19]], 6: [[8, 12]] } },
+      { id: 'sarah', first: 'Sarah', last: 'M.', color: 'violet', role: 'Monitrice · Permis B, boîte auto', active: true, phone: '06 •• •• •• 22', email: 'sarah@flashpermis-gardanne.fr', licence: 'A •• •• •• 002', vehicle: 'Corsa auto — BB-000-BB', types: ['Permis B', 'Boîte automatique'], hours: { 2: [[8, 12], [13, 19]], 3: [[8, 12], [13, 19]], 4: [[8, 12], [13, 19]], 5: [[8, 12], [13, 19]], 6: [[8, 13]] } },
+      { id: 'karim', first: 'Karim', last: 'B.', color: 'teal', role: 'Moniteur · Permis B, passerelle', active: true, phone: '06 •• •• •• 33', email: 'karim@flashpermis-gardanne.fr', licence: 'A •• •• •• 003', vehicle: '208 — CC-000-CC', types: ['Permis B', 'Passerelle'], hours: { 1: [[8, 12], [13, 19]], 2: [[8, 12], [13, 19]], 3: [[8, 12], [13, 19]], 4: [[8, 12], [13, 19]], 5: [[8, 12], [13, 18]] } }
     ];
 
     const yearsAgo = (y, m, d) => { const n = parse(T); return (n.getFullYear() - y) + '-' + pad(m) + '-' + pad(d); };
@@ -216,14 +216,15 @@
       s.joined = s.joined || addDays(T, -Math.round(30 + R() * 120));
       s.neph = s.neph || '•••• •••• ' + pad(10 + i) + pad(i * 7 % 100);
       s.avail = s.avail || { 2: ['soir'], 3: ['aprem'], 6: ['matin'] };
+      s.active = s.active !== false;
       s.docs = [
         { name: 'Pièce d’identité', status: 'valide' },
-        { name: 'Justificatif de domicile', status: 'valide' },
+        { name: 'Justificatif de domicile', status: s.id === 'yanis' ? 'refuse' : 'valide', reason: s.id === 'yanis' ? 'Justificatif de domicile trop ancien. Merci d’en déposer un nouveau (moins de 3 mois).' : '' },
         { name: 'Photo et signature numériques', status: 'valide' },
         { name: 'ASSR 2', status: s.id === 'ines' || s.id === 's5' ? 'attente' : 'valide' },
         { name: 'Attestation de recensement / JDC', status: s.id === 'mathis' ? 'manquant' : 'valide' },
         { name: 'Contrat de formation', status: 'signe' }
-      ];
+      ].map((d, di) => Object.assign({ id: s.id + '-d' + di, required: true, uploadedAt: d.status === 'manquant' ? null : stampFor(s.joined, '10:0' + (di % 6)) }, d));
     });
 
     /* Compétences */
@@ -435,14 +436,47 @@
       return;
     }
     // Nouvelle journée (ou première visite) : on régénère un planning frais,
-    // en conservant les contenus du site et les pré-inscriptions saisies.
+    // en conservant les contenus du site et les données de gestion saisies.
     const fresh = seed();
-    if (raw && raw.data && Array.isArray(raw.data.inscriptions)) {
-      const mine = raw.data.inscriptions.filter((i) => i.userCreated);
-      fresh.inscriptions = mine.concat(fresh.inscriptions);
-    }
+    if (raw && raw.data) carryOver(raw.data, fresh);
     db = fresh; db.content = mergeContent(raw && raw.content);
     save(true);
+  }
+
+  // Collections de gestion conservées d'un jour à l'autre (le planning, lui, est régénéré)
+  const CARRY = ['auth', 'payments', 'events', 'outbox', 'templates', 'counters', 'settings'];
+
+  function carryOver(old, fresh) {
+    CARRY.forEach((k) => { if (old[k] != null) fresh[k] = old[k]; });
+    if (Array.isArray(old.inscriptions)) {
+      fresh.inscriptions = old.inscriptions.filter((i) => i.userCreated).concat(fresh.inscriptions);
+    }
+    // Élèves : on garde documents, offre, état et fiches créées depuis l'administration
+    (old.students || []).forEach((os) => {
+      const ns = fresh.students.find((s) => s.id === os.id);
+      if (ns) {
+        if (os.docs) ns.docs = os.docs;
+        if (os.offer) ns.offer = os.offer;
+        if (os.active === false) ns.active = false;
+        ['phone', 'email', 'neph', 'note'].forEach((k) => { if (os[k]) ns[k] = os[k]; });
+      } else if (os.userCreated) {
+        fresh.students.push(os);
+        if (old.skills && old.skills[os.id]) fresh.skills[os.id] = old.skills[os.id];
+        if (old.code && old.code[os.id]) fresh.code[os.id] = old.code[os.id];
+      }
+    });
+    // Moniteurs : fiches complétées ou ajoutées
+    (old.instructors || []).forEach((oi) => {
+      const ni = fresh.instructors.find((i) => i.id === oi.id);
+      if (ni) ['phone', 'email', 'licence', 'vehicle', 'photo', 'note', 'active', 'role'].forEach((k) => { if (oi[k] != null) ni[k] = oi[k]; });
+      else if (oi.userCreated) fresh.instructors.push(oi);
+    });
+    // Parents créés depuis l'administration
+    (old.parents || []).forEach((op) => {
+      const np = fresh.parents.find((p) => p.id === op.id);
+      if (np) { np.access = op.access; np.visible = op.visible; np.notif = op.notif; }
+      else if (fresh.students.some((s) => s.id === op.student)) fresh.parents.push(op);
+    });
   }
   function save(silent) {
     const content = db.content; const data = Object.assign({}, db); delete data.content;

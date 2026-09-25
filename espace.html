@@ -75,7 +75,7 @@
           <a class="role-card primary" href="eleve.html"><span class="role-ic"><i data-i="user"></i></span><h3>Espace élève</h3><p>Progression, livret, planning, propositions de créneaux, code et documents.</p><span class="who"><span class="avatar avatar-sm av-blue">LM</span><div>Lucas Martin<span>Permis B · 17 ans</span></div><i data-i="arrow"></i></span></a>
           <a class="role-card" href="parent.html"><span class="role-ic"><i data-i="heart"></i></span><h3>Espace parents</h3><p>Suivre la progression, les leçons et le code, sans être derrière le volant.</p><span class="who"><span class="avatar avatar-sm av-rose">SM</span><div>Sophie Martin<span>Mère de Lucas</span></div><i data-i="arrow"></i></span></a>
           <a class="role-card" href="moniteur.html"><span class="role-ic"><i data-i="wheel"></i></span><h3>Espace moniteur</h3><p>Planning du jour et mise à jour du livret en quelques clics, depuis le téléphone.</p><span class="who"><span class="avatar avatar-sm av-blue">JR</span><div>Julien R.<span>Moniteur</span></div><i data-i="arrow"></i></span></a>
-          <a class="role-card" href="admin.html"><span class="role-ic"><i data-i="layout"></i></span><h3>Administration</h3><p>Élèves, moniteurs, planning, validations, progression, code, parents et contenus.</p><span class="who"><span class="avatar avatar-sm av-night">FP</span><div>Gérant / secrétariat<span>Flash PERMIS Gardanne</span></div><i data-i="arrow"></i></span></a>
+          <a class="role-card" href="admin.html"><span class="role-ic"><i data-i="layout"></i></span><h3>Administration</h3><p>Élèves, moniteurs, planning, validations, documents, paiements, caisse, comptabilité et contenus.</p><p class="small" style="color:var(--muted);display:flex;align-items:center;gap:6px"><i data-i="lock"></i>Accès protégé par code</p><span class="who"><span class="avatar avatar-sm av-night">FP</span><div>Gérant / secrétariat<span>Flash PERMIS Gardanne</span></div><i data-i="arrow"></i></span></a>
         </div>
         <form class="card login-card" id="login" novalidate>
           <span class="card-kicker">Connexion</span>
@@ -96,6 +96,9 @@
         <div class="sc"><span class="sc-n">04</span><strong>La progression évolue</strong><p>La jauge de Lucas augmente, la remarque et les notifications apparaissent instantanément.</p><a class="btn btn-ghost btn-sm" href="eleve.html#progression">Livret de Lucas<i data-i="arrow"></i></a></div>
         <div class="sc"><span class="sc-n">05</span><strong>Les parents suivent</strong><p>Sophie voit la leçon terminée, les compétences validées et la prochaine leçon.</p><a class="btn btn-ghost btn-sm" href="parent.html">Espace parents<i data-i="arrow"></i></a></div>
         <div class="sc"><span class="sc-n">06</span><strong>Une pré-inscription arrive</strong><p>Remplissez le formulaire du site : la demande apparaît dans l’administration et peut devenir un dossier élève.</p><a class="btn btn-ghost btn-sm" href="inscription.html">Pré-inscription<i data-i="arrow"></i></a></div>
+        <div class="sc"><span class="sc-n">07</span><strong>Documents et offre</strong><p>L’élève dépose ses pièces, l’agence les valide ou les refuse avec un motif, puis envoie l’offre de formation.</p><a class="btn btn-ghost btn-sm" href="eleve.html#documents">Mes documents<i data-i="arrow"></i></a></div>
+        <div class="sc"><span class="sc-n">08</span><strong>Paiement et ticket</strong><p>L’élève règle en ligne ou à l’agence : le reçu numéroté est généré automatiquement.</p><a class="btn btn-ghost btn-sm" href="eleve.html#paiements">Paiements<i data-i="arrow"></i></a></div>
+        <div class="sc"><span class="sc-n">09</span><strong>Caisse et comptabilité</strong><p>Le gérant retrouve son chiffre d’affaires, sa TVA et ses exports par période.</p><a class="btn btn-ghost btn-sm" href="admin.html#comptabilite">Comptabilité<i data-i="arrow"></i></a></div>
       </div>
 
       <div class="pitch" style="margin-top:56px">
@@ -113,6 +116,7 @@
 
   <script src="assets/js/store.js"></script>
   <script src="assets/js/ui.js"></script>
+  <script src="assets/js/gestion.js"></script>
   <script>
     FP.hydrate(document);
     document.getElementById('login').addEventListener('submit', function (e) { e.preventDefault(); FP.toast('Démonstration : choisissez un profil pour entrer dans un espace.', 'info'); });

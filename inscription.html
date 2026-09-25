@@ -132,6 +132,19 @@
 
   <script src="assets/js/store.js"></script>
   <script src="assets/js/ui.js"></script>
+  <script src="assets/js/gestion.js"></script>
   <script src="assets/js/inscription.js"></script>
+  <!-- Déclaration statique pour la détection des champs par Netlify Forms.
+       Le formulaire visible est envoyé en JavaScript vers ce même nom. -->
+  <form name="preinscription" data-netlify="true" netlify-honeypot="societe" hidden>
+    <input type="text" name="nom"><input type="text" name="prenom">
+    <input type="tel" name="telephone"><input type="email" name="email">
+    <input type="date" name="naissance"><input type="text" name="formation">
+    <input type="text" name="statut"><input type="text" name="parent_nom">
+    <input type="tel" name="parent_telephone"><input type="email" name="parent_email">
+    <input type="text" name="disponibilites"><textarea name="message"></textarea>
+    <input type="text" name="demande_le"><textarea name="recapitulatif"></textarea>
+    <input type="text" name="societe">
+  </form>
 </body>
 </html>

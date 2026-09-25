@@ -50,13 +50,13 @@
       '<div class="card"><div class="card-head"><span class="card-title">' + icon('bell') + 'Activité récente</span><a class="link-arrow" href="#notifications">Tout voir ' + icon('arrow') + '</a></div><div class="feed">' + q.notifs(TO).slice(0, 5).map(FP.notifItem).join('') + '</div></div>' +
       '</div></div>';
   }
-  const inscStatus = (s) => ({ nouvelle: 'Nouvelle', contactee: 'Contactée', dossier: 'Dossier en cours', finalisee: 'Inscription finalisée' }[s] || s);
+  const inscStatus = (s) => FP.INSC_STATUS[s] || s;
 
   /* ---------------- Élèves ---------------- */
   function eleves(el) {
     const list = db().students.filter((s) => (st.formation === 'all' || s.formation === st.formation) && (st.mon === 'all' || s.instructor === st.mon) && (!st.search || q.fullName(s).toLowerCase().includes(st.search.toLowerCase())));
     el.innerHTML =
-      '<div class="page-head"><div><h2>Élèves</h2><p>' + db().students.length + ' dossiers · cliquez sur un élève pour ouvrir son dossier</p></div><div class="page-actions"><a class="btn btn-dark" href="#inscriptions">' + icon('plus') + 'Depuis une pré-inscription</a></div></div>' +
+      '<div class="page-head"><div><h2>Élèves</h2><p>' + db().students.length + ' dossiers · cliquez sur un élève pour ouvrir sa fiche complète</p></div><div class="page-actions"><button class="btn btn-ghost" data-exportall>' + icon('download') + 'Export CSV</button><a class="btn btn-ghost" href="#inscriptions">' + icon('user') + 'Pré-inscriptions</a><button class="btn btn-dark" data-newstudent>' + icon('plus') + 'Nouvel élève</button></div></div>' +
       '<div class="card"><div class="toolbar"><div class="search">' + icon('search') + '<input class="input" id="s-search" placeholder="Rechercher un élève" value="' + esc(st.search) + '" aria-label="Rechercher"></div>' +
       '<select class="select" id="s-form" aria-label="Formation"><option value="all">Toutes les formations</option>' + db().content.formations.map((f) => '<option value="' + f.id + '" ' + (st.formation === f.id ? 'selected' : '') + '>' + esc(f.title) + '</option>').join('') + '</select>' +
       '<select class="select" id="s-mon" aria-label="Moniteur"><option value="all">Tous les moniteurs</option>' + db().instructors.map((i) => '<option value="' + i.id + '" ' + (st.mon === i.id ? 'selected' : '') + '>' + esc(i.first + ' ' + i.last) + '</option>').join('') + '</select>' +
@@ -66,14 +66,14 @@
         const h = q.hours(s.id), c = q.code(s.id), ins = q.instructor(s.instructor), par = q.parentsOf(s.id);
         const docsOk = s.docs.every((d) => d.status === 'valide' || d.status === 'signe');
         return '<tr class="clickable" data-student="' + s.id + '" tabindex="0"><td>' + personCell(s, q.age(s) + ' ans' + (q.age(s) < 18 ? ' · mineur' : '')) + '</td><td>' + esc(q.formation(s.formation).title) + '</td><td>' + esc(ins.first) + '</td><td>' + progCell(q.progress(s.id).pct) + '</td>' +
-          '<td class="num">' + fmt.hours(h.done) + ' <span class="muted">/ ' + h.contract + ' h</span></td><td class="num">' + (c.count ? c.avg + '/40' : '—') + '</td><td>' + (par.length ? FP.badge(par.some((p) => p.access) ? 'Accès actif' : 'Accès suspendu', par.some((p) => p.access) ? 'ok' : 'mute') : '<span class="muted small">—</span>') + '</td><td>' + (docsOk ? FP.badge('Complet', 'ok', 'check') : FP.badge('Incomplet', 'warn', 'alert')) + '</td></tr>';
+          '<td class="num">' + fmt.hours(h.done) + ' <span class="muted">/ ' + h.contract + ' h</span></td><td class="num">' + (c.count ? c.avg + '/40' : '—') + '</td><td>' + (par.length ? FP.badge(par.some((p) => p.access) ? 'Accès actif' : 'Accès suspendu', par.some((p) => p.access) ? 'ok' : 'mute') : '<span class="muted small">—</span>') + '</td><td>' + (docsOk ? FP.badge('Complet', 'ok', 'check') : FP.badge('Incomplet', 'warn', 'alert')) + (s.active === false ? ' ' + FP.badge('Désactivé', 'mute', 'ban') : '') + '</td></tr>';
       }).join('') + '</tbody></table></div></div>';
   }
 
   function openStudent(sid) {
     const render = (m) => {
       const s = q.student(sid), p = q.progress(sid), h = q.hours(sid), ins = q.instructor(s.instructor), c = q.code(sid);
-      const tabs = [['dossier', 'Dossier'], ['progression', 'Progression'], ['heures', 'Heures'], ['documents', 'Documents'], ['parents', 'Parents']];
+      const tabs = [['dossier', 'Dossier'], ['progression', 'Progression'], ['heures', 'Heures'], ['documents', 'Documents'], ['paiements', 'Paiements'], ['historique', 'Historique'], ['parents', 'Parents']];
       let body = '';
       if (st.tab === 'dossier') {
         body = '<div class="g g-4 g-stats"><div class="card stat"><span class="stat-label">Progression</span><span class="stat-value">' + p.pct + ' %</span></div><div class="card stat"><span class="stat-label">Heures</span><span class="stat-value">' + fmt.hours(h.done) + '</span></div><div class="card stat"><span class="stat-label">Code</span><span class="stat-value">' + (c.count ? c.avg + '<small>/40</small>' : '—') + '</span></div><div class="card stat"><span class="stat-label">Étape</span><span class="stat-value" style="font-size:17px">' + esc(FP.ref.STEPS.find((x) => x.id === s.step).label) + '</span></div></div>' +
@@ -87,8 +87,33 @@
       } else if (st.tab === 'heures') {
         body = V.hoursCard(sid) + '<div class="lessons">' + q.lessonsOf(sid).slice().sort((a, b) => (b.date + b.start).localeCompare(a.date + a.start)).slice(0, 12).map((l) => V.lessonRow(l)).join('') + '</div>';
       } else if (st.tab === 'documents') {
-        body = '<div class="docs">' + s.docs.map((d, i) => '<div class="doc"><span class="doc-ic">' + icon('file') + '</span><span class="doc-name">' + esc(d.name) + '</span>' + V.docStatus(d.status) +
-          (d.status !== 'valide' && d.status !== 'signe' ? '<button class="btn btn-ok btn-xs" data-docok="' + i + '">' + icon('check') + 'Valider</button>' : '') + '</div>').join('') + '</div>';
+        body = '<div class="stack">' + (s.docs || []).map((d) => '<div class="doc-card"><span class="doc-thumb">' +
+          (d.file && d.file.type !== 'application/pdf' ? '<img src="' + d.file.dataUrl + '" alt="">' : icon(d.file ? 'file' : 'upload')) + '</span>' +
+          '<div class="doc-main"><div class="row-between"><strong>' + esc(d.name) + '</strong>' + V.docStatus(d.status) + '</div>' +
+          '<span class="muted">' + (d.uploadedAt ? 'Déposé ' + fmt.ago(d.uploadedAt).toLowerCase() : 'Pas encore déposé') + '</span>' +
+          (d.reason ? '<div class="doc-reason">' + icon('alert') + '<span>' + esc(d.reason) + '</span></div>' : '') +
+          '<div class="doc-actions">' +
+          (d.file ? '<button class="btn btn-ghost btn-xs" data-viewdoc="' + sid + '|' + d.id + '">' + icon('eye') + 'Consulter</button>' : '') +
+          (d.file && d.status !== 'valide' ? '<button class="btn btn-ok btn-xs" data-okdoc="' + sid + '|' + d.id + '">' + icon('check') + 'Valider</button>' : '') +
+          (d.file && d.status !== 'refuse' ? '<button class="btn btn-danger btn-xs" data-kodoc="' + sid + '|' + d.id + '">' + icon('x') + 'Refuser</button>' : '') +
+          '</div></div></div>').join('') +
+          '<button class="btn btn-dark btn-sm" data-reqdoc="' + sid + '">' + icon('plus') + 'Demander un document</button></div>';
+      } else if (st.tab === 'paiements') {
+        const pays = q.payments(sid), bal = q.balance(sid);
+        body = '<div class="g g-3 g-stats"><div class="card stat"><span class="stat-label">Total dû</span><span class="stat-value">' + FP.money.eur(bal.due) + '</span></div>' +
+          '<div class="card stat"><span class="stat-label">Réglé</span><span class="stat-value">' + FP.money.eur(bal.paid) + '</span></div>' +
+          '<div class="card stat"><span class="stat-label">Reste</span><span class="stat-value">' + FP.money.eur(bal.rest) + '</span></div></div>' +
+          (s.offer ? '<div class="note">' + icon('info') + '<span>Offre « ' + esc(s.offer.label) + ' » — ' + FP.money.eur(s.offer.amountCts) + ' · ' +
+            ({ proposee: 'en attente de réponse de l’élève', acceptee: 'acceptée par l’élève', refusee: 'refusée par l’élève' }[s.offer.status]) + '</span></div>' : '') +
+          '<div class="docs">' + (pays.map((p) => '<div class="pay-row"><span class="doc-ic">' + icon('trophy') + '</span><div class="grow"><strong>' + esc(p.label) + '</strong>' +
+            '<span>' + (p.paidAt ? fmt.dateLong(p.paidAt.slice(0, 10)) + ' · ' + esc(FP.pay.METHODS[p.method] || '') : 'Créé le ' + fmt.dateLong(p.createdAt.slice(0, 10))) + '</span></div>' +
+            '<span class="pay-amount">' + FP.money.eur(p.amountCts) + '</span>' + FP.badge(FP.pay.PAY_STATUS[p.status].label, FP.pay.PAY_STATUS[p.status].tone) +
+            (p.status === 'attente' || p.status === 'partiel' ? '<button class="btn btn-ok btn-xs" data-collect="' + p.id + '">Encaisser</button>' : '') +
+            (p.ticket ? '<button class="btn btn-ghost btn-xs" data-ticket="' + p.id + '">Ticket</button>' : '') + '</div>').join('') || '<p class="empty">Aucun règlement.</p>') + '</div>' +
+          '<div class="row wrap"><button class="btn btn-dark btn-sm" data-newpay>' + icon('plus') + 'Nouveau règlement</button>' +
+          '<button class="btn btn-ghost btn-sm" data-offer="' + sid + '">' + icon('send') + 'Envoyer une offre</button></div>';
+      } else if (st.tab === 'historique') {
+        body = FP.timeline(q.events(sid));
       } else {
         const par = q.parentsOf(sid);
         body = par.length ? par.map((pp) => '<div class="doc">' + FP.avatar(pp, 'sm', 'rose') + '<span class="doc-name">' + esc(pp.first + ' ' + pp.last) + '<span>' + esc(pp.relation) + ' · ' + esc(pp.email) + '</span></span>' + FP.badge(pp.access ? 'Accès actif' : 'Suspendu', pp.access ? 'ok' : 'mute') + '</div>').join('') + '<a class="btn btn-ghost btn-sm" href="#parents" data-close>Gérer les accès parents</a>'
@@ -98,8 +123,16 @@
       m.el.querySelector('.modal-head h3').textContent = q.fullName(s);
       m.el.querySelector('.modal-head p').textContent = q.formation(s.formation).title + ' · ' + q.age(s) + ' ans · moniteur : ' + ins.first + ' ' + ins.last;
     };
-    const m = FP.modal({ title: '…', sub: '…', wide: true, body: '', actions: [{ label: 'Ouvrir l’espace élève', icon: 'external', onClick: () => { if (sid === 'lucas') window.open('eleve.html', '_blank'); else FP.toast('Dans la démo, l’espace élève complet est celui de Lucas.', 'info'); return false; } }, { label: 'Fermer', cls: 'btn-dark' }] });
+    const m = FP.modal({
+      title: '…', sub: '…', wide: true, body: '', actions: [
+        { label: 'Modifier', icon: 'edit', onClick: () => { setTimeout(() => editStudent(sid), 250); } },
+        { label: q.student(sid).active === false ? 'Réactiver' : 'Désactiver', icon: 'ban', onClick: () => { const cur = q.student(sid).active !== false; act.setStudentActive(sid, !cur); FP.toast(cur ? 'Compte désactivé.' : 'Compte réactivé.', 'info'); } },
+        { label: 'Supprimer', cls: 'btn-danger', icon: 'x', onClick: () => { setTimeout(() => confirmDeleteStudent(sid), 250); } },
+        { label: 'Fermer', cls: 'btn-dark' }
+      ]
+    });
     render(m);
+    FP.store.on(() => { if (document.body.contains(m.el) && q.student(sid)) render(m); });
     m.el.addEventListener('click', (e) => {
       const t = e.target.closest('[data-stab]'); if (t) { st.tab = t.dataset.stab; render(m); }
       const d = e.target.closest('[data-docok]'); if (d) { act.setDocStatus(sid, +d.dataset.docok, 'valide'); render(m); FP.toast('Document validé.'); }
@@ -111,10 +144,123 @@
     });
   }
 
+  /* ---------------- Création / modification d'un élève ---------------- */
+  function studentForm(s) {
+    s = s || {};
+    const fields = (n, l, t, v, extra) => '<label class="field"><span>' + l + '</span><input class="input" name="' + n + '" type="' + (t || 'text') + '" value="' + esc(v == null ? '' : v) + '" ' + (extra || '') + '></label>';
+    return '<div class="form-grid">' +
+      fields('first', 'Prénom *', 'text', s.first) + fields('last', 'Nom *', 'text', s.last) +
+      fields('phone', 'Téléphone', 'tel', s.phone) + fields('email', 'E-mail', 'email', s.email) +
+      fields('birth', 'Date de naissance', 'date', s.birth) +
+      '<label class="field"><span>Formation</span><select class="select" name="formation">' +
+      db().content.formations.map((f) => '<option value="' + f.id + '" ' + (s.formation === f.id ? 'selected' : '') + '>' + esc(f.title) + '</option>').join('') + '</select></label>' +
+      '<label class="field"><span>Moniteur référent</span><select class="select" name="instructor">' +
+      db().instructors.filter((i) => i.active !== false).map((i) => '<option value="' + i.id + '" ' + (s.instructor === i.id ? 'selected' : '') + '>' + esc(i.first + ' ' + i.last) + '</option>').join('') + '</select></label>' +
+      fields('contract', 'Volume prévu (heures)', 'number', s.contract || 20, 'min="1" max="80"') +
+      fields('neph', 'Numéro NEPH', 'text', s.neph) +
+      '<label class="field full"><span>Informations complémentaires</span><textarea class="textarea" name="note" style="min-height:70px">' + esc(s.note || '') + '</textarea></label>' +
+      '</div>';
+  }
+  const readForm = (w) => {
+    const o = {};
+    w.querySelectorAll('[name]').forEach((f) => { o[f.name] = f.type === 'number' ? (parseInt(f.value, 10) || 0) : f.value.trim(); });
+    return o;
+  };
+
+  function newStudent() {
+    FP.modal({
+      title: 'Nouvel élève', sub: 'Créer une fiche élève dans Flash PERMIS.', wide: true,
+      body: studentForm({ contract: 20 }),
+      actions: [{ label: 'Annuler' }, { label: 'Créer la fiche', cls: 'btn-dark', icon: 'check', onClick: (w) => {
+        const d = readForm(w);
+        if (!d.first || !d.last) { FP.toast('Le prénom et le nom sont obligatoires.', 'warn'); return false; }
+        if (!d.birth) d.birth = '2008-01-01';
+        const s = act.createStudent(d);
+        FP.toast('Fiche créée pour ' + q.fullName(s) + '.');
+        setTimeout(() => { st.tab = 'dossier'; openStudent(s.id); }, 300);
+      } }]
+    });
+  }
+
+  function editStudent(sid) {
+    const s = q.student(sid);
+    FP.modal({
+      title: 'Modifier ' + q.fullName(s), wide: true, body: studentForm(s),
+      actions: [{ label: 'Annuler' }, { label: 'Enregistrer', cls: 'btn-dark', icon: 'check', onClick: (w) => {
+        const d = readForm(w);
+        if (!d.first || !d.last) { FP.toast('Le prénom et le nom sont obligatoires.', 'warn'); return false; }
+        act.updateStudent(sid, d);
+        FP.toast('Fiche mise à jour.');
+      } }]
+    });
+  }
+
+  function confirmDeleteStudent(sid) {
+    const s = q.student(sid);
+    FP.modal({
+      title: 'Supprimer le dossier', sub: q.fullName(s),
+      body: '<p class="note">' + icon('alert') + '<span>Le dossier, les leçons, les demandes, les paiements, les documents et l’historique de cet élève seront définitivement supprimés.</span></p>' +
+        '<p class="small muted">Pour conserver l’historique, préférez « Désactiver » plutôt que la suppression.</p>',
+      actions: [{ label: 'Annuler' }, { label: 'Supprimer définitivement', cls: 'btn-danger', icon: 'x', onClick: () => { act.deleteStudent(sid); FP.toast('Dossier supprimé.', 'info'); } }]
+    });
+  }
+
+  /* ---------------- Création / modification d'un moniteur ---------------- */
+  function instructorForm(i) {
+    i = i || {};
+    const f = (n, l, t, v, extra) => '<label class="field"><span>' + l + '</span><input class="input" name="' + n + '" type="' + (t || 'text') + '" value="' + esc(v == null ? '' : v) + '" ' + (extra || '') + '></label>';
+    return '<div class="form-grid">' +
+      f('first', 'Prénom *', 'text', i.first) + f('last', 'Nom *', 'text', i.last) +
+      f('phone', 'Téléphone', 'tel', i.phone) + f('email', 'E-mail', 'email', i.email) +
+      f('licence', 'N° d’autorisation d’enseigner', 'text', i.licence) +
+      f('vehicle', 'Véhicule associé', 'text', i.vehicle, 'placeholder="Ex. : Clio V — AA-000-AA"') +
+      '<label class="field full"><span>Types de permis enseignés</span><input class="input" name="types" value="' + esc((i.types || []).join(', ')) + '" placeholder="Permis B, Conduite accompagnée"></label>' +
+      '<label class="field full"><span>Photo</span><input class="input" type="file" name="photo" accept="image/png,image/jpeg"></label>' +
+      '<label class="field full"><span>Informations complémentaires</span><textarea class="textarea" name="note" style="min-height:70px">' + esc(i.note || '') + '</textarea></label>' +
+      '</div>' + (i.photo ? '<div class="row"><img src="' + i.photo + '" alt="" style="width:64px;height:64px;border-radius:16px;object-fit:cover"><span class="small muted">Photo actuelle</span></div>' : '');
+  }
+
+  function saveInstructorForm(w, iid) {
+    const d = readForm(w);
+    if (!d.first || !d.last) { FP.toast('Le prénom et le nom sont obligatoires.', 'warn'); return false; }
+    d.types = String(d.types || '').split(',').map((x) => x.trim()).filter(Boolean);
+    d.role = d.types.length ? 'Moniteur · ' + d.types.join(', ') : 'Moniteur';
+    delete d.photo;
+    const file = w.querySelector('[name="photo"]').files[0];
+    const done = (photo) => {
+      if (photo) d.photo = photo.dataUrl;
+      if (iid) { act.updateInstructor(iid, d); FP.toast('Fiche moniteur mise à jour.'); }
+      else { act.createInstructor(d); FP.toast('Moniteur ajouté.'); }
+    };
+    if (file) { FP.readFile(file).then(done).catch((err) => { FP.toast(err.message, 'warn'); done(null); }); }
+    else done(null);
+  }
+
+  function newInstructor() {
+    FP.modal({ title: 'Ajouter un moniteur', wide: true, body: instructorForm({}), actions: [{ label: 'Annuler' }, { label: 'Ajouter', cls: 'btn-dark', icon: 'check', onClick: (w) => saveInstructorForm(w, null) }] });
+  }
+  function editInstructor(iid) {
+    const i = q.instructor(iid);
+    FP.modal({
+      title: 'Modifier ' + i.first + ' ' + i.last, wide: true, body: instructorForm(i),
+      actions: [
+        { label: i.active === false ? 'Réactiver' : 'Désactiver', icon: 'ban', onClick: () => { act.setInstructorActive(iid, i.active === false); FP.toast('Statut du moniteur mis à jour.', 'info'); } },
+        { label: 'Supprimer', cls: 'btn-danger', icon: 'x', onClick: () => {
+          setTimeout(() => FP.modal({
+            title: 'Supprimer ce moniteur ?', sub: i.first + ' ' + i.last,
+            body: '<p class="note">' + icon('alert') + '<span>Ses élèves et ses leçons seront réattribués à un autre moniteur actif.</span></p>',
+            actions: [{ label: 'Annuler' }, { label: 'Supprimer', cls: 'btn-danger', onClick: () => { const err = act.deleteInstructor(iid); FP.toast(err || 'Moniteur supprimé, élèves réattribués.', err ? 'warn' : 'info'); } }]
+          }), 250);
+        } },
+        { label: 'Enregistrer', cls: 'btn-dark', icon: 'check', onClick: (w) => saveInstructorForm(w, iid) }
+      ]
+    });
+  }
+
   /* ---------------- Moniteurs ---------------- */
   function moniteurs(el) {
     const ws = weekStart(0);
-    el.innerHTML = '<div class="page-head"><div><h2>Moniteurs</h2><p>Planning, élèves attribués et disponibilités — semaine du ' + fmt.day(ws) + '</p></div><div class="page-actions"><button class="btn btn-dark" data-absence>' + icon('ban') + 'Déclarer une absence</button></div></div>' +
+    el.innerHTML = '<div class="page-head"><div><h2>Moniteurs</h2><p>Fiches, planning, élèves attribués et disponibilités — semaine du ' + fmt.day(ws) + '</p></div><div class="page-actions"><button class="btn btn-ghost" data-absence>' + icon('ban') + 'Déclarer une absence</button><button class="btn btn-dark" data-newinstr>' + icon('plus') + 'Ajouter un moniteur</button></div></div>' +
       '<div class="g g-3">' + db().instructors.map((i) => {
         const studs = q.studentsOf(i.id), wk = lessonsWeek(0).filter((l) => l.instructor === i.id);
         const pend = q.pendingRequests(i.id).length;
@@ -128,7 +274,15 @@
               return '<i class="' + (absent && on ? 'abs' : busy ? 'busy' : on ? 'on' : '') + '" title="' + d.label + ' ' + hh + 'h"></i>';
             }).join('');
           }).join('') + '</div>';
-        return '<div class="card instr-card"><div class="instr-head">' + FP.avatar(i, 'lg', i.color) + '<div><strong>' + esc(i.first + ' ' + i.last) + '</strong><span>' + esc(i.role) + '</span></div></div>' +
+        return '<div class="card instr-card ' + (i.active === false ? 'is-off' : '') + '"><div class="instr-head">' +
+          (i.photo ? '<img src="' + i.photo + '" alt="" class="instr-photo">' : FP.avatar(i, 'lg', i.color)) +
+          '<div style="flex:1;min-width:0"><strong>' + esc(i.first + ' ' + i.last) + '</strong><span>' + esc(i.role) + '</span>' +
+          (i.active === false ? ' ' + FP.badge('Désactivé', 'mute', 'ban') : '') + '</div>' +
+          '<button class="icon-btn" data-editinstr="' + i.id + '" aria-label="Modifier la fiche">' + icon('edit') + '</button></div>' +
+          '<div class="docs" style="margin:-4px 0 0">' +
+          [['phone', 'Téléphone', i.phone], ['mail', 'E-mail', i.email], ['shield', 'Autorisation d’enseigner', i.licence], ['car', 'Véhicule', i.vehicle]]
+            .filter((r) => r[2]).map((r) => '<div class="doc" style="padding:7px 0"><span class="doc-ic" style="width:32px;height:32px">' + icon(r[0]) + '</span><span class="doc-name" style="font-size:13.5px"><span>' + r[1] + '</span>' + esc(r[2]) + '</span></div>').join('') +
+          '</div>' +
           '<div class="mini-stats"><div><span>Élèves</span><strong>' + studs.length + '</strong></div><div><span>Leçons (sem.)</span><strong>' + wk.length + '</strong></div><div><span>Demandes</span><strong>' + pend + '</strong></div></div>' +
           '<div><span class="label">Disponibilités & planning de la semaine</span><div class="mt" style="margin-top:8px">' + grid + '</div><div class="cal-legend mt"><span><i style="background:#cfe0ff"></i>Disponible</span><span><i style="background:var(--night)"></i>Leçon</span><span><i style="background:#f4c7c1"></i>Absence</span></div></div>' +
           '<div><span class="label">Élèves attribués</span><div class="chips" style="margin-top:8px">' + studs.map((s) => '<button class="tag" data-student="' + s.id + '">' + esc(s.first + ' ' + s.last[0] + '.') + '</button>').join('') + '</div></div>' +
@@ -194,7 +348,31 @@
       title: l.theme, sub: fmt.dayCap(l.date) + ' · ' + fmt.range(l.start, l.duration),
       body: '<div class="docs"><div class="doc">' + FP.avatar(s, 'sm') + '<span class="doc-name">' + esc(q.fullName(s)) + '<span>' + esc(q.formation(s.formation).title) + ' · ' + q.progress(s.id).pct + ' %</span></span>' + V.lessonBadge(l) + '</div><div class="doc">' + FP.avatar(i, 'sm', i.color) + '<span class="doc-name">' + esc(i.first + ' ' + i.last) + '<span>Moniteur</span></span></div><div class="doc"><span class="doc-ic">' + icon('pin') + '</span><span class="doc-name">' + esc(l.meeting) + '<span>Rendez-vous</span></span></div></div>' +
         (l.comment ? '<div class="hist-comment">' + icon('message') + '<span>« ' + esc(l.comment) + ' »</span></div>' : ''),
-      actions: (l.status === 'confirmee' ? [{ label: 'Annuler la leçon', cls: 'btn-danger', icon: 'ban', onClick: () => { act.cancelLesson(l.id, 'Annulée par l’agence'); FP.toast('Leçon annulée. L’élève a été notifié.', 'info'); } }] : []).concat([{ label: 'Dossier élève', icon: 'user', onClick: () => { setTimeout(() => openStudent(s.id), 250); } }, { label: 'Fermer', cls: 'btn-dark' }])
+      actions: (l.status === 'confirmee' ? [
+        { label: 'Déplacer', icon: 'swap', onClick: () => { setTimeout(() => moveLessonModal(l.id), 250); } },
+        { label: 'Annuler la leçon', cls: 'btn-danger', icon: 'ban', onClick: () => { act.cancelLesson(l.id, 'Annulée par l’agence'); FP.toast('Leçon annulée. L’élève a été notifié.', 'info'); } }] : [])
+        .concat([{ label: 'Dossier élève', icon: 'user', onClick: () => { setTimeout(() => openStudent(s.id), 250); } }, { label: 'Fermer', cls: 'btn-dark' }])
+    });
+  }
+
+  function moveLessonModal(lid) {
+    const l = db().lessons.find((x) => x.id === lid); if (!l) return;
+    const s = q.student(l.student);
+    FP.modal({
+      title: 'Déplacer la leçon', sub: q.fullName(s) + ' · actuellement le ' + fmt.day(l.date) + ' à ' + fmt.time(l.start),
+      body: '<div class="form-grid"><label class="field"><span>Nouvelle date</span><input class="input" type="date" id="ml-date" value="' + l.date + '"></label>' +
+        '<label class="field"><span>Nouvelle heure</span><input class="input" type="time" id="ml-time" step="1800" value="' + l.start + '"></label>' +
+        '<label class="field full"><span>Moniteur</span><select class="select" id="ml-ins">' +
+        db().instructors.filter((i) => i.active !== false).map((i) => '<option value="' + i.id + '" ' + (l.instructor === i.id ? 'selected' : '') + '>' + esc(i.first + ' ' + i.last) + '</option>').join('') + '</select></label></div>' +
+        '<p class="note">' + icon('bell') + '<span>L’élève, ses parents et le moniteur seront notifiés du changement, et l’historique en gardera la trace.</span></p>',
+      actions: [{ label: 'Annuler' }, { label: 'Déplacer la leçon', cls: 'btn-dark', icon: 'swap', onClick: (w) => {
+        const date = w.querySelector('#ml-date').value, time = w.querySelector('#ml-time').value, ins = w.querySelector('#ml-ins').value;
+        if (!date || !time) { FP.toast('Renseignez la date et l’heure.', 'warn'); return false; }
+        const conflict = q.conflict(ins, l.student, date, time, l.duration);
+        if (conflict && !w.dataset.forced) { FP.toast('Conflit : ' + conflict + '. Confirmez pour forcer.', 'warn'); w.dataset.forced = '1'; return false; }
+        act.moveLesson(lid, { date, start: time, instructor: ins }, 'Administration');
+        FP.toast('Leçon déplacée. Tout le monde a été notifié.');
+      } }]
     });
   }
 
@@ -272,7 +450,7 @@
       '<div class="stack">' + (list.map((i) => {
         const age = i.birth ? q.age({ birth: i.birth }) : null;
         return '<div class="card"><div class="req-top"><div class="person">' + FP.avatar({ first: i.first, last: i.last }, '') + '<div><strong style="font-size:16.5px">' + esc(i.first + ' ' + i.last) + '</strong><span>' + esc(q.formation(i.formation).title) + (age != null ? ' · ' + age + ' ans' : '') + ' · reçue ' + fmt.ago(i.createdAt).toLowerCase() + '</span></div></div>' +
-          '<div class="row">' + (i.minor ? FP.badge('Mineur', 'info') : '') + '<select class="select input-sm" data-istatus="' + i.id + '" aria-label="Statut" style="width:auto">' + ['nouvelle', 'contactee', 'dossier', 'finalisee'].map((x) => '<option value="' + x + '" ' + (i.status === x ? 'selected' : '') + '>' + inscStatus(x) + '</option>').join('') + '</select></div></div>' +
+          '<div class="row">' + (i.minor ? FP.badge('Mineur', 'info') : '') + '<select class="select input-sm" data-istatus="' + i.id + '" aria-label="Statut" style="width:auto">' + Object.keys(FP.INSC_STATUS).map((x) => '<option value="' + x + '" ' + (i.status === x ? 'selected' : '') + '>' + inscStatus(x) + '</option>').join('') + '</select></div></div>' +
           '<div class="g g-3 mt" style="gap:10px">' +
           '<div class="req-msg"><span class="card-kicker">Contact</span><br>' + icon('phone') + ' ' + esc(i.phone) + '<br>' + icon('mail') + ' ' + esc(i.email) + '</div>' +
           '<div class="req-msg"><span class="card-kicker">Disponibilités</span><br>' + esc((i.dispo || []).join(', ') || '—') + '</div>' +
@@ -323,36 +501,87 @@
       '<div class="card"><div class="card-head"><span class="card-title">' + icon('list') + 'Journal d’activité</span></div><div class="feed">' + (db().log.map((l) => '<div class="notif"><span class="notif-ic">' + icon('clock') + '</span><span class="notif-body"><span class="notif-text">' + esc(l.text) + '</span><span class="notif-time">' + fmt.ago(l.at) + '</span></span></div>').join('') || '<p class="empty">Les actions réalisées pendant la démo apparaîtront ici.</p>') + '</div></div></div>';
   }
 
-  const shell = FP.shell({
-    role: 'admin', page: 'admin.html', roleLabel: 'Administration', roleIcon: 'layout',
-    user: { first: 'Gérant', last: 'Flash', sub: 'Administrateur · Gardanne', color: 'night' },
-    notifTo: TO,
-    nav: [
-      { id: 'dashboard', label: 'Tableau de bord', short: 'Accueil', icon: 'grid' },
-      { id: 'eleves', label: 'Élèves', icon: 'users' },
-      { id: 'moniteurs', label: 'Moniteurs', icon: 'wheel' },
-      { id: 'planning', label: 'Planning', icon: 'calendar', badge: () => q.pendingRequests().length },
-      { id: 'progression', label: 'Progression', icon: 'clipboard' },
-      { id: 'code', label: 'Code', icon: 'book' },
-      { id: 'parents', label: 'Parents', icon: 'heart' },
-      { id: 'inscriptions', label: 'Pré-inscriptions', short: 'Inscriptions', icon: 'user', badge: () => db().inscriptions.filter((i) => i.status === 'nouvelle').length },
-      { id: 'contenus', label: 'Contenus du site', icon: 'edit' },
-      { id: 'notifications', label: 'Notifications', icon: 'bell', badge: () => q.unread(TO) }
-    ],
-    tabs: ['dashboard', 'eleves', 'planning', 'inscriptions', 'notifications'],
-    sideFoot: '<div class="side-card">' + icon('shield') + '<strong>Vous gardez le contrôle</strong>Chaque créneau proposé par un élève passe par votre validation.</div>',
-    views: { dashboard, eleves, moniteurs, planning, progression, code, parents, inscriptions, contenus, notifications }
-  });
+  const A = FP.adminViews;
+  let shell = null;
 
-  V.handleRequests('Secrétariat Flash PERMIS');
+  function boot() {
+    shell = FP.shell({
+      role: 'admin', page: 'admin.html', roleLabel: 'Administration', roleIcon: 'layout',
+      user: { first: 'Gérant', last: 'Flash', sub: 'Administrateur · Gardanne', color: 'night' },
+      notifTo: TO,
+      nav: [
+        { group: 'Pilotage' },
+        { id: 'dashboard', label: 'Tableau de bord', short: 'Accueil', icon: 'grid' },
+        { group: 'Formation' },
+        { id: 'eleves', label: 'Élèves', icon: 'users' },
+        { id: 'moniteurs', label: 'Moniteurs', icon: 'wheel' },
+        { id: 'planning', label: 'Planning', icon: 'calendar', badge: () => q.pendingRequests().length },
+        { id: 'progression', label: 'Progression', icon: 'clipboard' },
+        { id: 'code', label: 'Code', icon: 'book' },
+        { group: 'Dossiers' },
+        { id: 'inscriptions', label: 'Pré-inscriptions', short: 'Inscriptions', icon: 'user', badge: () => db().inscriptions.filter((i) => i.status === 'nouvelle').length },
+        { id: 'documents', label: 'Documents', icon: 'file', badge: () => q.docsPending().length },
+        { id: 'parents', label: 'Parents', icon: 'heart' },
+        { group: 'Gestion' },
+        { id: 'paiements', label: 'Paiements', icon: 'trophy', badge: () => q.payments().filter((p) => p.status === 'attente').length },
+        { id: 'caisse', label: 'Ticket de caisse', short: 'Caisse', icon: 'clipboard' },
+        { id: 'comptabilite', label: 'Comptabilité', short: 'Compta', icon: 'chart' },
+        { group: 'Système' },
+        { id: 'communications', label: 'Communications', icon: 'send' },
+        { id: 'contenus', label: 'Contenus du site', icon: 'edit' },
+        { id: 'reglages', label: 'Réglages', icon: 'sliders' },
+        { id: 'notifications', label: 'Notifications', icon: 'bell', badge: () => q.unread(TO) }
+      ],
+      tabs: ['dashboard', 'eleves', 'planning', 'paiements', 'notifications'],
+      sideFoot: '<div class="side-card">' + icon('shield') + '<strong>Vous gardez le contrôle</strong>Chaque créneau proposé par un élève passe par votre validation.</div>',
+      views: {
+        dashboard, eleves, moniteurs, planning, progression, code, parents, inscriptions, contenus, notifications,
+        documents: A.documents, paiements: A.paiements, caisse: A.caisse,
+        comptabilite: A.comptabilite, communications: A.communications, reglages: A.reglages
+      }
+    });
+    FP.bindAdminShell(shell);
+    V.handleRequests('Secrétariat Flash PERMIS');
+  }
+
+  /* ---------------- Accès sécurisé ---------------- */
+  const SESSION_KEY = 'fp.admin.ok';
+  const unlocked = () => { try { return sessionStorage.getItem(SESSION_KEY) === '1'; } catch (e) { return false; } };
+
+  function lockScreen(message) {
+    document.getElementById('app').innerHTML =
+      '<div class="lock-screen"><form class="lock-card" id="lock-form" novalidate>' +
+      '<span class="lock-ic">' + icon('lock') + '</span>' +
+      '<h1>Espace administrateur</h1>' +
+      '<p>Flash PERMIS · Gardanne — saisissez le code d’accès de l’auto-école.</p>' +
+      '<input class="input" id="lock-code" type="password" inputmode="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Code d’accès" aria-label="Code d’accès">' +
+      (message ? '<p class="lock-err" role="alert">' + esc(message) + '</p>' : '') +
+      '<button class="btn btn-primary btn-lg btn-block" type="submit">' + icon('arrow') + 'Entrer</button>' +
+      '<a class="lock-back" href="index.html">' + icon('left') + 'Retour au site Flash PERMIS</a>' +
+      '</form></div>';
+    const input = document.getElementById('lock-code');
+    input.focus();
+    document.getElementById('lock-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      if (q.checkAdminCode(input.value)) {
+        try { sessionStorage.setItem(SESSION_KEY, '1'); } catch (err) { /* ignore */ }
+        boot();
+        FP.toast('Bienvenue dans l’espace administrateur Flash PERMIS.');
+      } else {
+        lockScreen('Code incorrect. Réessayez.');
+      }
+    });
+  }
+
+  if (unlocked()) boot(); else lockScreen('');
 
   document.addEventListener('input', (e) => {
-    if (e.target.id === 's-search') { st.search = e.target.value; const pos = e.target.selectionStart; shell.render(true); const i = $('#s-search'); if (i) { i.focus(); i.setSelectionRange(pos, pos); } }
+    if (e.target.id === 's-search') { st.search = e.target.value; const pos = e.target.selectionStart; shell && shell.render(true); const i = $('#s-search'); if (i) { i.focus(); i.setSelectionRange(pos, pos); } }
   });
   document.addEventListener('change', (e) => {
     const t = e.target;
-    if (t.id === 's-form') { st.formation = t.value; shell.render(true); }
-    if (t.id === 's-mon') { st.mon = t.value; shell.render(true); }
+    if (t.id === 's-form') { st.formation = t.value; shell && shell.render(true); }
+    if (t.id === 's-mon') { st.mon = t.value; shell && shell.render(true); }
     if (t.dataset.pset) { const [pid, path] = t.dataset.pset.split('|'); act.setParent(pid, path, t.checked); FP.toast(t.checked ? 'Accès parent activé.' : 'Accès parent suspendu.', 'info'); }
     if (t.dataset.istatus) { act.setInscriptionStatus(t.dataset.istatus, t.value); FP.toast('Statut mis à jour.'); }
   });
@@ -367,9 +596,13 @@
   document.addEventListener('click', (e) => {
     const t = e.target;
     if (t.closest('.modal-wrap') && !t.closest('[data-invite]')) return;
+    if (t.closest('[data-newstudent]')) { newStudent(); return; }
+    if (t.closest('[data-newinstr]')) { newInstructor(); return; }
+    const ei = t.closest('[data-editinstr]'); if (ei) { editInstructor(ei.dataset.editinstr); return; }
+    const mv = t.closest('[data-movelesson]'); if (mv) { moveLessonModal(mv.dataset.movelesson); return; }
     const sd = t.closest('[data-student]'); if (sd) { st.tab = 'dossier'; openStudent(sd.dataset.student); return; }
-    const wk = t.closest('[data-week]'); if (wk) { const v = +wk.dataset.week; st.week = v === 0 ? 0 : st.week + v; shell.render(true); return; }
-    const ins = t.closest('[data-instr]'); if (ins) { st.instr = ins.dataset.instr; shell.render(true); return; }
+    const wk = t.closest('[data-week]'); if (wk) { const v = +wk.dataset.week; st.week = v === 0 ? 0 : st.week + v; shell && shell.render(true); return; }
+    const ins = t.closest('[data-instr]'); if (ins) { st.instr = ins.dataset.instr; shell && shell.render(true); return; }
     const le = t.closest('[data-lessonev]'); if (le) { openLesson(le.dataset.lessonev); return; }
     const re = t.closest('[data-reqev]');
     if (re) {

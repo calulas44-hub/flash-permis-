@@ -28,6 +28,7 @@
 
       counters.map((r) => '<div class="card mt-0" style="margin-bottom:16px;border-color:#c9d7ff;background:var(--info-bg)"><div class="row wrap"><span class="stat-ic info" style="margin:0">' + icon('swap') + '</span><div style="flex:1;min-width:200px"><strong>Flash PERMIS vous propose un autre créneau</strong><p class="small muted">' + fmt.dayCap(r.counter.date) + ' à ' + fmt.time(r.counter.start) + ' (au lieu du ' + fmt.day(r.date) + ' à ' + fmt.time(r.start) + ')</p></div><div class="row"><button class="btn btn-ok btn-sm" data-counter-yes="' + r.id + '">' + icon('check') + 'Accepter</button><button class="btn btn-ghost btn-sm" data-counter-no="' + r.id + '">Refuser</button></div></div></div>').join('') +
 
+      FP.client.offerBanner(SID, true) +
       '<div class="g g-4">' +
       '<a class="card card-dark span-2 hero-card" href="#progression">' + FP.ring(p.pct, { size: 132, stroke: 13, label: p.acquired + ' / ' + p.total, aria: 'des compétences maîtrisées' }) +
       '<div class="hero-body"><span class="card-kicker">Votre progression</span><h3>' + p.pct + ' % des compétences maîtrisées</h3>' + V.heroBlocks(SID) + '<span class="link-arrow" style="margin-top:14px">Voir mon livret ' + icon('arrow') + '</span></div></a>' +
@@ -58,6 +59,15 @@
       '<div class="card"><div class="card-head"><span class="card-title">' + icon('route') + 'Prochaines étapes</span></div>' + V.steps(SID) +
       '<div class="next-step mt">' + icon('target') + '<span>Prochaine étape : <strong>' + esc(q.nextStep(SID).label.toLowerCase()) + '</strong></span></div></div>' +
       '<div class="card"><div class="card-head"><span class="card-title">' + icon('bell') + 'Notifications</span><a class="link-arrow" href="#notifications">Tout voir ' + icon('arrow') + '</a></div><div class="feed">' + q.notifs(TO).slice(0, 4).map(FP.notifItem).join('') + '</div></div>' +
+      (function () {
+        const todo = q.docs(SID).filter((d) => d.status === 'manquant' || d.status === 'refuse');
+        const rest = q.balance(SID).rest;
+        if (!todo.length && !rest) return '';
+        return '<div class="card"><div class="card-head"><span class="card-title">' + icon('alert') + 'À faire</span></div><div class="stack">' +
+          (todo.length ? '<a class="row" href="#documents">' + FP.skillBadge('retravailler') + '<span class="small"><b>' + todo.length + ' document(s) à fournir</b><br><span class="muted">' + esc(todo.map((d) => d.name).join(', ')) + '</span></span></a>' : '') +
+          (rest ? '<a class="row" href="#paiements">' + FP.skillBadge('en_cours') + '<span class="small"><b>' + FP.money.eur(rest) + ' restant à régler</b><br><span class="muted">En ligne ou à l’agence</span></span></a>' : '') +
+          '</div></div>';
+      })() +
       '</div></div>';
   }
 
@@ -129,7 +139,7 @@
       '<div class="stack">' + wizardHTML() + '</div>' +
       '<div class="stack">' +
       '<div class="card"><div class="card-head"><span class="card-title">' + icon('checkCircle') + 'Conduites confirmées</span><span class="badge badge-mute">' + up.length + '</span></div><div class="lessons">' +
-      (up.map((l) => V.lessonRow(l)).join('') || '<p class="empty">Aucune conduite confirmée.</p>') +
+      (up.map((l) => V.lessonRow(l, { action: '<button class="btn btn-ghost btn-xs" data-changeslot="' + l.id + '">' + icon('swap') + 'Autre horaire</button>' })).join('') || '<p class="empty">Aucune conduite confirmée.</p>') +
       cancelled.map((l) => V.lessonRow(l)).join('') + '</div></div>' +
       '<div class="card"><div class="card-head"><span class="card-title">' + icon('inbox') + 'Mes demandes</span></div><div class="stack">' +
       (reqs.filter((r) => r.status !== 'annulee').map((r) => V.reqItem(r, {
@@ -166,18 +176,21 @@
   function documents(el) {
     const s = me(), ins = q.instructor(s.instructor), par = q.parentsOf(SID);
     el.innerHTML =
-      '<div class="page-head"><div><h2>Mon dossier</h2><p>Vos informations et documents d’inscription.</p></div>' +
-      '<div class="page-actions"><button class="btn btn-dark" data-upload>' + icon('upload') + 'Déposer un document</button></div></div>' +
+      '<div class="page-head"><div><h2>Mon dossier</h2><p>Vos informations, vos documents et votre historique.</p></div></div>' +
       '<div class="g g-main-r">' +
       '<div class="stack"><div class="card"><div class="row" style="margin-bottom:14px">' + FP.avatar(s, 'lg', 'blue') + '<div><strong style="font-size:18px">' + esc(q.fullName(s)) + '</strong><p class="small muted">' + q.age(s) + ' ans · élève depuis le ' + fmt.dateLong(s.joined) + '</p></div></div>' +
       '<div class="docs">' +
-      [['cap', 'Formation', q.formation(s.formation).title], ['wheel', 'Moniteur référent', ins.first + ' ' + ins.last], ['shield', 'Numéro NEPH', s.neph], ['building', 'Agence', 'Flash PERMIS · Gardanne'], ['heart', 'Accès parents', par.length ? par.map((p) => p.first + ' ' + p.last + ' (' + p.relation.toLowerCase() + ')').join(', ') : 'Aucun']]
+      [['cap', 'Formation', q.formation(s.formation).title], ['wheel', 'Moniteur référent', ins.first + ' ' + ins.last], ['phone', 'Contact moniteur', ins.phone || 'Via l’agence'], ['shield', 'Numéro NEPH', s.neph], ['building', 'Agence', 'Flash PERMIS · Gardanne'], ['heart', 'Accès parents', par.length ? par.map((p) => p.first + ' ' + p.last + ' (' + p.relation.toLowerCase() + ')').join(', ') : 'Aucun']]
         .map((r) => '<div class="doc"><span class="doc-ic">' + icon(r[0]) + '</span><span class="doc-name"><span>' + r[1] + '</span>' + esc(r[2]) + '</span></div>').join('') +
-      '</div></div></div>' +
-      '<div class="card"><div class="card-head"><span class="card-title">' + icon('file') + 'Documents</span><span class="small muted">' + s.docs.filter((d) => d.status === 'valide' || d.status === 'signe').length + '/' + s.docs.length + ' validés</span></div><div class="docs">' +
-      s.docs.map((d) => '<div class="doc"><span class="doc-ic">' + icon('file') + '</span><span class="doc-name">' + esc(d.name) + '</span>' + V.docStatus(d.status) + '</div>').join('') +
-      '<div class="doc"><span class="doc-ic">' + icon('clipboard') + '</span><span class="doc-name">Livret d’apprentissage<span>Version digitale : votre livret de progression</span></span><a class="btn btn-ghost btn-xs" href="#progression">Ouvrir</a></div>' +
-      '</div></div></div>';
+      '</div></div>' +
+      '<div class="card"><div class="card-head"><span class="card-title">' + icon('clock') + 'Mon historique</span></div>' + FP.timeline(q.events(SID), { limit: 25 }) + '</div></div>' +
+      '<div class="card"><div class="card-head"><span class="card-title">' + icon('file') + 'Mes documents</span></div>' + FP.client.documentsView(SID) + '</div>' +
+      '</div>';
+  }
+
+  /* ---------------- Paiements ---------------- */
+  function paiements(el) {
+    el.innerHTML = '<div class="page-head"><div><h2>Mon inscription & paiements</h2><p>Votre offre, vos règlements et vos reçus.</p></div></div>' + FP.client.paymentsView(SID);
   }
 
   /* ---------------- Notifications ---------------- */
@@ -197,16 +210,22 @@
       { id: 'progression', label: 'Mon livret de progression', short: 'Livret', icon: 'clipboard' },
       { id: 'planning', label: 'Planning & créneaux', short: 'Planning', icon: 'calendar', badge: () => q.requestsOf(SID).filter((r) => r.status === 'contre_proposition').length },
       { id: 'code', label: 'Suivi du code', short: 'Code', icon: 'book' },
-      { id: 'documents', label: 'Mon dossier', short: 'Dossier', icon: 'file' },
+      { id: 'paiements', label: 'Inscription & paiements', short: 'Paiement', icon: 'trophy', badge: () => (me().offer && me().offer.status === 'proposee' ? 1 : 0) + q.payments(SID).filter((p) => p.status === 'attente').length },
+      { id: 'documents', label: 'Mon dossier', short: 'Dossier', icon: 'file', badge: () => q.docs(SID).filter((d) => d.status === 'manquant' || d.status === 'refuse').length },
       { id: 'notifications', label: 'Notifications', short: 'Alertes', icon: 'bell', badge: () => q.unread(TO) }
     ],
-    tabs: ['accueil', 'progression', 'planning', 'code', 'notifications'],
+    tabs: ['accueil', 'progression', 'planning', 'paiements', 'documents'],
     sideFoot: V.agencyCard(),
-    views: { accueil, progression, planning, code, documents, notifications }
+    views: { accueil, progression, planning, code, paiements, documents, notifications }
   });
 
   /* ---------------- Interactions ---------------- */
+  FP.client.handleUploads(() => shell.render(true));
+  FP.client.handlePayments(() => shell.render(true));
+
   document.addEventListener('click', (e) => {
+    const cs = e.target.closest('[data-changeslot]');
+    if (cs) { FP.client.changeSlotModal(cs.dataset.changeslot, me().first, () => shell.render(true)); return; }
     const t = e.target;
     const av = t.closest('[data-av]');
     if (av) {
@@ -252,13 +271,6 @@
         actions: [{ label: 'Annuler' }, { label: 'Enregistrer', cls: 'btn-primary', icon: 'check', onClick: (m) => { const v = Math.round(+m.querySelector('#code-score').value); if (!(v >= 0 && v <= 40)) { FP.toast('Le score doit être compris entre 0 et 40.', 'warn'); return false; } act.addCodeResult(SID, v); FP.toast('Nouveau résultat enregistré : ' + v + '/40.'); } }]
       });
       return;
-    }
-    if (t.closest('[data-upload]')) {
-      FP.modal({
-        title: 'Déposer un document', sub: 'Le document sera vérifié par le secrétariat Flash PERMIS.',
-        body: '<label class="field"><span>Type de document</span><select class="select" id="doc-type"><option>Justificatif de domicile (mise à jour)</option><option>Attestation d’hébergement</option><option>Autorisation parentale</option><option>Autre document</option></select></label><label class="field"><span>Fichier</span><input class="input" type="file" accept="image/*,.pdf"></label>',
-        actions: [{ label: 'Annuler' }, { label: 'Envoyer', cls: 'btn-primary', icon: 'upload', onClick: (m) => { act.addDoc(SID, m.querySelector('#doc-type').value); FP.toast('Document envoyé. Il est en cours de vérification.'); } }]
-      });
     }
   });
 })();

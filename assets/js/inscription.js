@@ -60,16 +60,49 @@
     return !first;
   }
 
+  /* Envoi réel vers Netlify Forms : l'auto-école reçoit un e-mail à chaque demande. */
+  function sendToNetlify(data) {
+    const F = FP.store.db.content.formations.find((f) => f.id === data.formation);
+    const dt = new Date();
+    const recap = [
+      'Nouvelle demande de pré-inscription — Flash PERMIS Gardanne', '',
+      'Nom : ' + data.last, 'Prénom : ' + data.first,
+      'Téléphone : ' + data.phone, 'E-mail : ' + data.email,
+      'Date de naissance : ' + data.birth, 'Statut : ' + (data.minor ? 'Mineur' : 'Majeur'),
+      'Formation souhaitée : ' + (F ? F.title : data.formation),
+      'Disponibilités : ' + (data.dispo.join(', ') || 'non précisées'),
+      data.minor ? 'Parent / représentant légal : ' + data.parent.name + ' — ' + data.parent.phone + ' — ' + data.parent.email : '',
+      'Informations complémentaires : ' + (data.message || '—'), '',
+      'Demande reçue le ' + dt.toLocaleDateString('fr-FR') + ' à ' + dt.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+    ].filter(Boolean).join('\n');
+    const payload = {
+      'form-name': 'preinscription',
+      nom: data.last, prenom: data.first, telephone: data.phone, email: data.email,
+      naissance: data.birth, formation: F ? F.title : data.formation,
+      statut: data.minor ? 'Mineur' : 'Majeur',
+      parent_nom: data.minor ? data.parent.name : '', parent_telephone: data.minor ? data.parent.phone : '',
+      parent_email: data.minor ? data.parent.email : '',
+      disponibilites: data.dispo.join(', '), message: data.message,
+      demande_le: dt.toLocaleString('fr-FR'), recapitulatif: recap, societe: ''
+    };
+    const body = Object.keys(payload).map((k) => encodeURIComponent(k) + '=' + encodeURIComponent(payload[k])).join('&');
+    return fetch('/', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body })
+      .then((r) => r.ok)
+      .catch(() => false);
+  }
+
   form.addEventListener('submit', (e) => {
     e.preventDefault();
     if (!validate()) return;
     const minor = form.minor.value === '1';
-    FP.act.submitInscription({
+    const payload = {
       first: form.first.value.trim(), last: form.last.value.trim(), phone: form.phone.value.trim(), email: form.email.value.trim(),
       birth: form.birth.value, formation: form.formation.value, minor,
       parent: minor ? { name: form.pname.value.trim(), phone: form.pphone.value.trim(), email: form.pemail.value.trim() } : null,
       dispo: $$('input[name="dispo"]:checked').map((i) => i.value), message: form.message.value.trim()
-    });
+    };
+    FP.act.submitInscription(payload);
+    sendToNetlify(payload);
     $('#form-card').innerHTML = '<div class="success" role="status"><span class="success-ic">' + icon('check') + '</span>' +
       '<h2>Votre demande a bien été reçue par Flash PERMIS. Notre équipe reviendra vers vous pour finaliser votre inscription.</h2>' +
       '<p>Merci ' + esc(form.first.value.trim()) + ' ! À très vite à l’agence de Gardanne.</p>' +
