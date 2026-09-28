@@ -46,7 +46,7 @@
         '<div class="remark">' + FP.avatar(ins, '', ins.color) + '<div><blockquote>« ' + esc(last.comment) + ' »</blockquote><p class="remark-meta">' + esc(ins.first) + ' · ' + esc(last.theme) + '</p></div></div></div>' : '') +
       (toRework ? '<div class="card"><div class="card-head"><span class="card-title">' + icon('alert') + 'À retravailler</span></div><div class="stack">' + toRework + '</div></div>' : '') +
       '<div class="card"><div class="card-head"><span class="card-title">' + icon('calendar') + 'Mes prochaines conduites</span><a class="link-arrow" href="#planning">Planning ' + icon('arrow') + '</a></div><div class="lessons">' +
-      (q.upcoming(SID).slice(0, 3).map((l) => V.lessonRow(l)).join('') || '<p class="empty">Aucune leçon à venir.</p>') +
+      (q.upcoming(SID).slice(0, 3).map((l) => V.lessonRow(l, { action: lessonActions(l) })).join('') || '<p class="empty">Aucune leçon à venir.</p>') +
       pend.map((r) => '<div class="lesson">' + V.dateBlock(r.date) + '<div class="lesson-info"><strong>Créneau proposé</strong><span>' + fmt.relShort(r.date) + ' · ' + fmt.range(r.start, r.duration) + '</span></div><div class="lesson-side">' + FP.reqBadge('en_attente') + '</div></div>').join('') +
       '</div></div>' +
       '<div class="card"><div class="card-head"><span class="card-title">' + icon('clock') + 'Dernières leçons</span><a class="link-arrow" href="#progression">Historique ' + icon('arrow') + '</a></div><div class="lessons">' + q.history(SID).slice(0, 3).map((l) => V.lessonRow(l)).join('') + '</div></div>' +
@@ -62,9 +62,11 @@
       (function () {
         const todo = q.docs(SID).filter((d) => d.status === 'manquant' || d.status === 'refuse');
         const rest = q.balance(SID).rest;
-        if (!todo.length && !rest) return '';
+        const unpaid = q.upcoming(SID).filter((l) => { const s2 = q.lessonPayStatus(l); return s2 && s2.key === 'attente'; });
+        if (!todo.length && !rest && !unpaid.length) return '';
         return '<div class="card"><div class="card-head"><span class="card-title">' + icon('alert') + 'À faire</span></div><div class="stack">' +
           (todo.length ? '<a class="row" href="#documents">' + FP.skillBadge('retravailler') + '<span class="small"><b>' + todo.length + ' document(s) à fournir</b><br><span class="muted">' + esc(todo.map((d) => d.name).join(', ')) + '</span></span></a>' : '') +
+          (unpaid.length ? '<button class="row" data-paylesson="' + unpaid[0].id + '" style="text-align:left">' + FP.skillBadge('retravailler') + '<span class="small"><b>' + unpaid.length + ' leçon(s) à régler</b><br><span class="muted">Prochaine : ' + fmt.dayCap(unpaid[0].date) + '</span></span></button>' : '') +
           (rest ? '<a class="row" href="#paiements">' + FP.skillBadge('en_cours') + '<span class="small"><b>' + FP.money.eur(rest) + ' restant à régler</b><br><span class="muted">En ligne ou à l’agence</span></span></a>' : '') +
           '</div></div>';
       })() +
@@ -84,6 +86,14 @@
       '<div class="section-title"><h3>Compétences par étape</h3><span class="small muted">Mis à jour par votre moniteur après chaque leçon</span></div>' + V.blocks(SID) +
       '<div class="section-title"><h3>Historique des leçons</h3><span class="small muted">' + q.history(SID).length + ' leçons</span></div>' +
       '<div class="hist">' + q.history(SID).map((l) => V.histItem(l)).join('') + '</div>';
+  }
+
+  /** Boutons d'une leçon confirmée : payer si nécessaire, sinon ouvrir le détail */
+  function lessonActions(l) {
+    const st = q.lessonPayStatus(l);
+    const pay = st && st.key !== 'paye'
+      ? '<button class="btn btn-primary btn-xs" data-paylesson="' + l.id + '">' + icon('lock') + (st.key === 'sur_place' ? 'Payer en ligne' : 'Payer') + '</button>' : '';
+    return pay + '<button class="btn btn-ghost btn-xs" data-openlesson="' + l.id + '">' + icon('eye') + 'Détail</button>';
   }
 
   /* ---------------- Planning & créneaux ---------------- */
@@ -139,7 +149,7 @@
       '<div class="stack">' + wizardHTML() + '</div>' +
       '<div class="stack">' +
       '<div class="card"><div class="card-head"><span class="card-title">' + icon('checkCircle') + 'Conduites confirmées</span><span class="badge badge-mute">' + up.length + '</span></div><div class="lessons">' +
-      (up.map((l) => V.lessonRow(l, { action: '<button class="btn btn-ghost btn-xs" data-changeslot="' + l.id + '">' + icon('swap') + 'Autre horaire</button>' })).join('') || '<p class="empty">Aucune conduite confirmée.</p>') +
+      (up.map((l) => V.lessonRow(l, { action: lessonActions(l) })).join('') || '<p class="empty">Aucune conduite confirmée.</p>') +
       cancelled.map((l) => V.lessonRow(l)).join('') + '</div></div>' +
       '<div class="card"><div class="card-head"><span class="card-title">' + icon('inbox') + 'Mes demandes</span></div><div class="stack">' +
       (reqs.filter((r) => r.status !== 'annulee').map((r) => V.reqItem(r, {
@@ -221,6 +231,7 @@
 
   /* ---------------- Interactions ---------------- */
   FP.client.handleUploads(() => shell.render(true));
+  FP.client.handleLessonPayments(me().first, () => shell.render(true));
   FP.client.handlePayments(() => shell.render(true));
 
   document.addEventListener('click', (e) => {

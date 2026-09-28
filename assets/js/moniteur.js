@@ -32,7 +32,7 @@
       '<div class="section-title" style="margin-top:0"><h3>' + fmt.rel(day) + '</h3><span class="small muted">' + lessons.length + ' leçon(s) · ' + fmt.hours(lessons.reduce((t, l) => t + l.duration, 0) / 60) + '</span></div>' +
       (lessons.length ? lessons.map((l) => {
         const s = q.student(l.student);
-        const badge = l.status === 'a_completer' ? FP.badge('Livret à compléter', 'warn', 'edit') : l.status === 'terminee' ? FP.badge('Terminée', 'ok', 'check') : '';
+        const badge = (l.status === 'a_completer' ? FP.badge('Livret à compléter', 'warn', 'edit') : l.status === 'terminee' ? FP.badge('Terminée', 'ok', 'check') : '') + V.payBadge(l);
         return '<a class="m-lesson ' + (l.status === 'terminee' ? 'is-done' : '') + '" href="#lecon/' + l.id + '"><span class="m-time"><b>' + fmt.time(l.start) + '</b><span>' + fmt.dur(l.duration) + '</span></span><span class="m-body"><strong>' + esc(q.fullName(s)) + '</strong><span>' + esc(l.theme) + '</span><span class="row" style="gap:6px;margin-top:4px">' + FP.badge(q.progress(s.id).pct + ' %', 'mute', 'trend') + badge + '</span></span>' + icon('right', 'chev') + '</a>';
       }).join('') : '<div class="card"><p class="empty">' + (q.isAbsent(IID, day) ? 'Absence enregistrée ce jour-là.' : 'Aucune leçon ce jour-là.') + '</p></div>');
   }
@@ -51,6 +51,20 @@
       '<div class="doc"><span class="doc-ic">' + icon('pin') + '</span><span class="doc-name"><span>Rendez-vous</span>' + esc(l.meeting) + '</span></div>' +
       '<div class="doc"><span class="doc-ic">' + icon('car') + '</span><span class="doc-name"><span>Heures effectuées</span>' + fmt.hours(h.done) + ' / ' + h.contract + ' h</span></div>' +
       '</div></div>' +
+      (function () {
+        const st = q.lessonPayStatus(l);
+        if (!st) return '';
+        const pay = q.ensureLessonPayment(l);
+        return '<div class="card mt"><div class="card-head"><span class="card-title">' + icon('trophy') + 'Paiement de la leçon</span>' + FP.badge(st.label, st.tone, st.icon) + '</div>' +
+          '<div class="docs">' +
+          '<div class="doc"><span class="doc-ic">' + icon('trophy') + '</span><span class="doc-name"><span>Montant</span>' + FP.money.eur(pay.amountCts) + '</span></div>' +
+          '<div class="doc"><span class="doc-ic">' + icon('lock') + '</span><span class="doc-name"><span>Moyen choisi</span>' + esc(pay.method ? FP.pay.METHODS[pay.method] : 'Non choisi') + '</span></div>' +
+          '</div>' +
+          (st.key === 'paye'
+            ? '<div class="note mt" style="background:var(--ok-bg);border-color:#bfe8cd;color:var(--ok)">' + icon('checkCircle') + '<span><b>Payée</b> le ' + fmt.dateLong((pay.paidAt || '').slice(0, 10)) + '.</span></div>'
+            : '<button class="btn btn-ok btn-block mt" data-cashlesson="' + l.id + '">' + icon('check') + 'Marquer le paiement comme effectué</button>') +
+          '</div>';
+      })() +
       (V.reworkList(s.id) ? '<div class="stack mt">' + V.reworkList(s.id) + '</div>' : '') +
       (last ? '<div class="card mt"><span class="card-kicker">Dernière remarque</span><p style="font-weight:600;margin-top:6px">« ' + esc(last.comment) + ' »</p><p class="small muted" style="margin-top:4px">' + fmt.relShort(last.date) + ' · ' + esc(last.theme) + '</p></div>' : '') +
       '<div class="stack mt">' +
@@ -212,6 +226,23 @@
 
   document.addEventListener('click', (e) => {
     const t = e.target;
+    const cl = t.closest('[data-cashlesson]');
+    if (cl) {
+      const lid = cl.dataset.cashlesson;
+      const l = FP.store.db.lessons.find((x) => x.id === lid);
+      const pay = q.ensureLessonPayment(l);
+      FP.modal({
+        title: 'Encaisser la leçon', sub: q.fullName(q.student(l.student)) + ' · ' + FP.money.eur(pay.amountCts),
+        body: '<label class="field"><span>Moyen de paiement reçu</span><select class="select" id="cl-method">' +
+          Object.keys(FP.pay.METHODS).map((k) => '<option value="' + k + '" ' + (k === 'especes' ? 'selected' : '') + '>' + FP.pay.METHODS[k] + '</option>').join('') + '</select></label>' +
+          '<p class="note">' + icon('info') + '<span>Un reçu numéroté sera généré et l’élève verra sa leçon passer en « Payée ».</span></p>',
+        actions: [{ label: 'Annuler' }, { label: 'Confirmer l’encaissement', cls: 'btn-ok', icon: 'check', onClick: (w) => {
+          const r = act.markLessonPaid(lid, ins().first + ' (moniteur)', w.querySelector('#cl-method').value);
+          FP.toast(r.already ? 'Cette leçon était déjà payée.' : 'Paiement enregistré. L’élève a été notifié.');
+        } }]
+      });
+      return;
+    }
     const mm = t.closest('[data-movem]'); if (mm) { moveModal(mm.dataset.movem); return; }
     const d = t.closest('[data-day]'); if (d) { day = d.dataset.day; shell.render(true); return; }
     const tri = t.closest('[data-tri]');

@@ -19,6 +19,12 @@
   };
   v.lessonBadge = (l) => { const s = LESSON_STATUS[l.status]; return FP.badge(s[0], s[1], s[2]); };
 
+  /** Pastille de paiement d'une leçon (rien tant que le créneau n'est pas confirmé) */
+  v.payBadge = (l) => {
+    const st = q.lessonPayStatus(l);
+    return st ? FP.badge(st.label, st.tone, st.icon) : '';
+  };
+
   v.lessonRow = (l, o) => {
     o = o || {};
     const ins = q.instructor(l.instructor), st = q.student(l.student);
@@ -26,7 +32,7 @@
     const tone = l.date === D.todayISO() ? 'volt' : (o.tone || '');
     return '<div class="lesson">' + v.dateBlock(l.date, tone) +
       '<div class="lesson-info"><strong>' + esc(l.theme) + '</strong><span>' + fmt.relShort(l.date) + ' · ' + fmt.range(l.start, l.duration) + ' · ' + esc(who) + '</span></div>' +
-      '<div class="lesson-side">' + (o.noBadge ? '' : v.lessonBadge(l)) + (o.action || '') + '</div></div>';
+      '<div class="lesson-side">' + (o.noBadge ? '' : v.lessonBadge(l)) + (o.pay === false ? '' : v.payBadge(l)) + (o.action || '') + '</div></div>';
   };
 
   v.histItem = (l, o) => {

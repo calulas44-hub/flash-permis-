@@ -225,3 +225,161 @@
     });
   };
 })(window);
+
+/* ==========================================================================
+   Flash PERMIS — Paiement d'une heure de conduite (espace élève et parents)
+   ========================================================================== */
+(function (global) {
+  'use strict';
+  const FP = global.FP;
+  const { q, act, fmt, icon, esc } = FP;
+  const eur = FP.money.eur, METHODS = FP.pay.METHODS;
+  const C = FP.client;
+
+  /* Moyens de paiement — ajouter une entrée ici suffit à l'étendre */
+  const WAYS = [
+    { id: 'cb', icon: 'lock', label: 'Carte bancaire', sub: 'Visa, Mastercard, CB', online: true },
+    { id: 'applepay', icon: 'phoneDevice', label: 'Apple Pay', sub: 'Paiement en un geste', online: true, dark: true },
+    { id: 'googlepay', icon: 'phoneDevice', label: 'Google Pay', sub: 'Paiement en un geste', online: true, dark: true },
+    { id: 'onsite', icon: 'building', label: 'Paiement sur place', sub: 'Auprès du moniteur ou à l’agence', online: false }
+  ];
+
+  /** Bloc « Paiement » du détail d'une réservation. Vide tant que le créneau n'est pas confirmé. */
+  C.lessonPaySection = (l, opts) => {
+    opts = opts || {};
+    const st = q.lessonPayStatus(l);
+    if (!st) {
+      return '<div class="note">' + icon('clock') + '<span>Le paiement sera disponible dès que Flash PERMIS aura confirmé ce créneau.</span></div>';
+    }
+    const p = q.ensureLessonPayment(l);
+    const price = p ? p.amountCts : q.lessonPrice(l);
+    const head = '<div class="pay-head"><div><span class="card-kicker">Montant de la leçon</span><p class="amount-hero">' + eur(price) + '</p>' +
+      '<p class="small muted">' + fmt.dur(l.duration) + ' de conduite · ' + eur(FP.store.db.settings.hourRate) + ' de l’heure</p></div>' +
+      FP.badge(st.label, st.tone, st.icon) + '</div>';
+
+    if (st.key === 'paye') {
+      return '<div class="pay-block is-paid">' + head +
+        '<div class="note" style="background:var(--ok-bg);border-color:#bfe8cd;color:var(--ok)">' + icon('checkCircle') +
+        '<span><b>Leçon payée</b> le ' + fmt.dateLong((p.paidAt || '').slice(0, 10)) + ' par ' + esc(METHODS[p.method] || '—') + '.</span></div>' +
+        (p.ticket ? '<button class="btn btn-ghost btn-block" data-cticket="' + p.id + '">' + icon('file') + 'Voir le reçu ' + esc(p.ticket.no) + '</button>' : '') + '</div>';
+    }
+    if (st.key === 'sur_place') {
+      return '<div class="pay-block">' + head +
+        '<div class="note note-volt">' + icon('building') + '<span><b>À régler sur place.</b> Le montant sera encaissé par votre moniteur ou à l’agence. Votre réservation reste confirmée.</span></div>' +
+        (opts.canPay === false ? '' : '<button class="btn btn-ghost btn-block" data-paylesson="' + l.id + '">' + icon('lock') + 'Finalement, payer en ligne</button>') + '</div>';
+    }
+    return '<div class="pay-block">' + head +
+      (p && p.lastError ? '<div class="doc-reason">' + icon('alert') + '<span>' + esc(p.lastError) + ' Votre réservation est conservée, vous pouvez réessayer.</span></div>' : '') +
+      (opts.canPay === false
+        ? '<div class="note">' + icon('info') + '<span>Seul l’élève peut procéder au règlement depuis son espace.</span></div>'
+        : '<button class="btn btn-primary btn-block" data-paylesson="' + l.id + '">' + icon('lock') + 'Payer cette leçon</button>') + '</div>';
+  };
+
+  /** Détail d'une réservation, avec sa section paiement */
+  C.lessonModal = (lid, opts) => {
+    opts = opts || {};
+    const render = (m) => {
+      const l = FP.store.db.lessons.find((x) => x.id === lid);
+      if (!l) { m.close(); return; }
+      const ins = q.instructor(l.instructor);
+      m.el.querySelector('.modal-head h3').textContent = l.theme;
+      m.el.querySelector('.modal-head p').textContent = fmt.dayCap(l.date) + ' · ' + fmt.range(l.start, l.duration);
+      m.el.querySelector('.modal-body').innerHTML =
+        '<div class="docs">' +
+        '<div class="doc"><span class="doc-ic">' + icon('clock') + '</span><span class="doc-name"><span>Horaire</span>' + fmt.dayCap(l.date) + ' · ' + fmt.range(l.start, l.duration) + '</span>' + FP.v.lessonBadge(l) + '</div>' +
+        '<div class="doc">' + FP.avatar(ins, 'sm', ins.color) + '<span class="doc-name"><span>Moniteur</span>' + esc(ins.first + ' ' + ins.last) + '</span></div>' +
+        '<div class="doc"><span class="doc-ic">' + icon('pin') + '</span><span class="doc-name"><span>Rendez-vous</span>' + esc(l.meeting || 'Agence Flash PERMIS') + '</span></div>' +
+        '</div>' +
+        '<h4 style="font-size:15px;margin-top:4px">Paiement</h4>' +
+        C.lessonPaySection(l, opts);
+    };
+    const m = FP.modal({
+      title: '…', sub: '…', body: '',
+      actions: [
+        opts.canPay === false ? null : { label: 'Demander un autre horaire', icon: 'swap', onClick: () => { setTimeout(() => C.changeSlotModal(lid, opts.by, opts.onDone), 250); } },
+        { label: 'Fermer', cls: 'btn-dark' }
+      ].filter(Boolean)
+    });
+    render(m);
+    FP.store.on(() => { if (document.body.contains(m.el)) render(m); });
+    return m;
+  };
+
+  /** Choix du moyen de paiement puis règlement */
+  C.payLessonModal = (lid, by, onDone) => {
+    const l = FP.store.db.lessons.find((x) => x.id === lid); if (!l) return;
+    const p = q.ensureLessonPayment(l); if (!p) { FP.toast('Ce créneau doit d’abord être confirmé.', 'warn'); return; }
+    if (p.status === 'paye') { FP.toast('Cette leçon est déjà payée.', 'info'); return; }
+    let busy = false, chosen = null;
+
+    const methodsHTML = '<div class="pay-methods">' + WAYS.map((w) =>
+      '<button class="pay-method ' + (w.dark ? 'dark' : '') + '" data-way="' + w.id + '">' + icon(w.icon) +
+      '<span>' + w.label + '<small>' + w.sub + '</small></span></button>').join('') + '</div>';
+
+    const m = FP.modal({
+      title: 'Régler ' + eur(p.amountCts), sub: l.theme + ' · ' + fmt.day(l.date) + ' à ' + fmt.time(l.start),
+      body: '<div id="pay-step">' + methodsHTML +
+        '<p class="note mt">' + icon('shield') + '<span>Démonstration : aucun paiement réel n’est effectué et aucune donnée bancaire n’est demandée.</span></p></div>',
+      actions: [{ label: 'Annuler' }]
+    });
+
+    const finish = (msg, tone) => { FP.toast(msg, tone); const c = m.el.querySelector('[data-close]'); if (c) c.click(); if (onDone) onDone(); };
+
+    const online = (way) => {
+      const step = m.el.querySelector('#pay-step');
+      step.innerHTML =
+        '<div class="pay-confirm"><span class="pay-way">' + icon(way.icon) + way.label + '</span>' +
+        '<p class="amount-hero">' + eur(p.amountCts) + '</p>' +
+        (way.id === 'cb'
+          ? '<div class="form-grid" style="margin-top:12px"><label class="field full"><span>Numéro de carte</span><input class="input" inputmode="numeric" placeholder="•••• •••• •••• ••••" disabled value="4242 4242 4242 4242"></label>' +
+            '<label class="field"><span>Expiration</span><input class="input" disabled value="12/29"></label><label class="field"><span>Cryptogramme</span><input class="input" disabled value="•••"></label></div>'
+          : '<p class="muted small" style="margin-top:10px">Validez le paiement avec ' + way.label + '.</p>') +
+        '<button class="btn btn-primary btn-lg btn-block mt" data-confirm>' + icon('lock') + 'Payer ' + eur(p.amountCts) + '</button>' +
+        '<div class="row-between mt"><button class="link-btn" data-back>Changer de moyen</button><button class="link-btn" data-fail style="color:var(--muted)">Simuler un échec</button></div></div>';
+    };
+
+    m.el.addEventListener('click', (e) => {
+      if (busy) return;
+      const w = e.target.closest('[data-way]');
+      if (w) {
+        const way = WAYS.find((x) => x.id === w.dataset.way);
+        if (!way.online) {
+          act.setLessonOnSite(lid, by);
+          finish('C’est noté : vous réglerez cette leçon sur place.', 'info');
+          return;
+        }
+        chosen = way;
+        online(way);
+        return;
+      }
+      if (e.target.closest('[data-back]')) { chosen = null; m.el.querySelector('#pay-step').innerHTML = methodsHTML; return; }
+      if (e.target.closest('[data-fail]')) {
+        act.failLessonPayment(lid, 'Le paiement a été refusé par votre banque.');
+        finish('Paiement refusé. Votre réservation est conservée, vous pouvez réessayer.', 'warn');
+        return;
+      }
+      const btn = e.target.closest('[data-confirm]');
+      if (btn) {
+        busy = true;
+        btn.disabled = true;
+        btn.innerHTML = icon('refresh') + 'Paiement en cours…';
+        setTimeout(() => {
+          const r = act.payLesson(lid, (chosen && chosen.id) || 'cb', by);
+          busy = false;
+          if (r.ok) finish(r.already ? 'Cette leçon était déjà payée.' : 'Paiement accepté — leçon payée ✅');
+          else { FP.toast(r.error || 'Le paiement a échoué.', 'warn'); btn.disabled = false; }
+        }, 900);
+      }
+    });
+  };
+
+  /** Branchement global : à appeler une fois par page */
+  C.handleLessonPayments = (by, onDone) => {
+    document.addEventListener('click', (e) => {
+      const pl = e.target.closest('[data-paylesson]');
+      if (pl) { e.preventDefault(); C.payLessonModal(pl.dataset.paylesson, by, onDone); return; }
+      const ol = e.target.closest('[data-openlesson]');
+      if (ol) { e.preventDefault(); C.lessonModal(ol.dataset.openlesson, { by, onDone, canPay: e.target.closest('[data-readonly]') ? false : undefined }); }
+    });
+  };
+})(window);

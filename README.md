@@ -64,10 +64,23 @@ L’administration est protégée par un **code d’accès**, demandé à l’ou
 | **Planning** | Calendrier, demandes de créneaux, acceptation, refus, contre-proposition, **déplacement d’une leçon**, absences |
 | **Documents** | Pièces déposées par les élèves et les parents · consultation, téléchargement, validation, refus motivé, demande de pièce complémentaire |
 | **Paiements** | Offres, règlements, encaissements (CB, Apple Pay, Google Pay, espèces, virement, chèque), paiements partiels, remboursements |
+| **Paiement à la leçon** | Chaque heure de conduite confirmée génère son règlement : l’élève paie en ligne ou sur place, le moniteur encaisse et le statut se synchronise partout |
 | **Ticket de caisse** | Reçu numéroté `FP-AAAA-NNNN` généré à chaque encaissement, aperçu, impression et enregistrement en PDF |
 | **Comptabilité** | CA HT / TVA / TTC par jour, semaine, mois, trimestre, année ou période libre · répartition par moyen de paiement · exports CSV et récapitulatif imprimable |
 | **Communications** | Boîte d’envoi des messages déclenchés automatiquement et **modèles modifiables** (e-mail et SMS) |
 | **Réglages** | Code d’accès, taux de TVA, numérotation des tickets, exports et réinitialisation |
+
+## Paiement d’une heure de conduite
+
+Le règlement n’apparaît qu’une fois le créneau **accepté par l’élève et confirmé par l’auto-école** — jamais avant. Tant qu’une demande est en attente ou qu’une contre-proposition n’a pas été acceptée, aucun paiement n’est proposé.
+
+**Trois statuts**, visibles côté élève, parents, moniteur et administration : *En attente de paiement* · *Paiement sur place* · *Payée*.
+
+**Parcours en ligne** — l’élève choisit carte bancaire, Apple Pay ou Google Pay, confirme, et la leçon passe à « Payée » avec un reçu numéroté. En cas d’échec, la réservation est conservée, le motif s’affiche et l’élève peut réessayer. Un règlement déjà encaissé ne peut jamais l’être deux fois.
+
+**Parcours sur place** — l’élève choisit « Paiement sur place », la réservation reste confirmée, puis le moniteur encaisse depuis son téléphone (*Marquer le paiement comme effectué*) et le statut passe à « Payée » des deux côtés.
+
+Le tarif horaire se règle dans **Administration › Réglages** (50 € par défaut). Ces règlements alimentent automatiquement la caisse, les tickets et la comptabilité. Pour ajouter un moyen de paiement, il suffit d’une entrée dans le tableau `WAYS` de `assets/js/espace-client.js`.
 
 ## Historique et traçabilité
 

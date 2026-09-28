@@ -51,7 +51,8 @@
     ensure('outbox', []);
     ensure('templates', defaultTemplates());
     ensure('counters', { ticket: 0 });
-    ensure('settings', { tvaRate: 20, currency: 'EUR' });
+    ensure('settings', { tvaRate: 20, currency: 'EUR', hourRate: 5000 });
+    if (d.settings.hourRate == null) { d.settings.hourRate = 5000; changed = true; }
     // Complète les modèles ajoutés après coup
     const def = defaultTemplates();
     Object.keys(def).forEach((k) => { if (!d.templates[k]) { d.templates[k] = def[k]; changed = true; } });
@@ -685,6 +686,135 @@
     dossier: 'Dossier en cours', accepte: 'Accepté', refuse: 'Refusé', finalisee: 'Inscription finalisée'
   };
 
+  /* ======================================================================
+     Paiement d'une heure de conduite
+     Le règlement n'existe qu'une fois le créneau accepté par l'élève
+     ET confirmé par le moniteur ou le secrétariat : dans ce modèle, une
+     leçon ne passe au statut « confirmee » qu'à ces deux conditions.
+     ====================================================================== */
+  const LESSON_PAY = {
+    attente: { key: 'attente', label: 'En attente de paiement', tone: 'pending', icon: 'clock' },
+    sur_place: { key: 'sur_place', label: 'Paiement sur place', tone: 'info', icon: 'building' },
+    paye: { key: 'paye', label: 'Payée', tone: 'ok', icon: 'checkCircle' }
+  };
+  FP.LESSON_PAY = LESSON_PAY;
+
+  /** Une leçon est réglable dès qu'elle est confirmée (créneau accepté des deux côtés). */
+  q.lessonPayable = (l) => !!l && l.status === 'confirmee';
+  q.lessonPayment = (l) => (l && l.paymentId ? db().payments.find((p) => p.id === l.paymentId) : null);
+  q.lessonPrice = (l) => Math.round((db().settings.hourRate || 5000) * (l.duration / 60));
+
+  /** Crée le règlement rattaché à la leçon si elle est devenue payable. */
+  function ensureLessonPayment(l, opts) {
+    if (!q.lessonPayable(l)) return null;
+    let p = q.lessonPayment(l);
+    if (p) return p;
+    const label = 'Heure de conduite — ' + FP.fmt.day(l.date) + ' à ' + FP.fmt.time(l.start);
+    p = makePayment(l.student, label, q.lessonPrice(l), { silent: true, at: (opts && opts.at) || nowStamp() });
+    p.lessonId = l.id;
+    p.onSite = false;
+    l.paymentId = p.id;
+    return p;
+  }
+  q.ensureLessonPayment = ensureLessonPayment;
+
+  /** Statut de paiement affichable pour une leçon (null si non applicable). */
+  q.lessonPayStatus = (l) => {
+    if (!q.lessonPayable(l)) return null;
+    const p = q.lessonPayment(l);
+    if (!p) return LESSON_PAY.attente;
+    if (p.status === 'paye') return LESSON_PAY.paye;
+    if (p.onSite) return LESSON_PAY.sur_place;
+    return LESSON_PAY.attente;
+  };
+
+  const lessonById = (lid) => db().lessons.find((x) => x.id === lid);
+
+  /** Règlement en ligne. Idempotent : une leçon déjà payée n'est jamais réencaissée. */
+  act.payLesson = (lid, method, by) => {
+    const l = lessonById(lid); if (!l) return { ok: false, error: 'Leçon introuvable.' };
+    const p = ensureLessonPayment(l);
+    if (!p) return { ok: false, error: 'Le créneau doit d’abord être confirmé.' };
+    if (p.status === 'paye') return { ok: true, already: true, payment: p };
+    p.onSite = false;
+    p.lastError = '';
+    markPaid(p.id, method, { by: by || q.student(l.student).first });
+    logEvent(l.student, 'payment', 'Heure de conduite du ' + FP.fmt.day(l.date) + ' réglée en ligne (' + METHODS[method] + ').', by || q.student(l.student).first);
+    act.notify('moniteur:' + l.instructor, 'Leçon du ' + FP.fmt.day(l.date) + ' avec ' + q.student(l.student).first + ' : paiement reçu.', 'info', '#planning');
+    save();
+    return { ok: true, payment: p };
+  };
+
+  /** L'élève choisit de régler à l'agence : la réservation reste valide. */
+  act.setLessonOnSite = (lid, by) => {
+    const l = lessonById(lid); if (!l) return null;
+    const p = ensureLessonPayment(l); if (!p || p.status === 'paye') return p;
+    p.onSite = true; p.method = 'especes'; p.lastError = '';
+    logEvent(l.student, 'payment', 'Règlement sur place choisi pour la leçon du ' + FP.fmt.day(l.date) + '.', by || q.student(l.student).first);
+    act.notify('moniteur:' + l.instructor, q.student(l.student).first + ' réglera sa leçon du ' + FP.fmt.day(l.date) + ' sur place.', 'info', '#planning');
+    act.notify('admin', q.student(l.student).first + ' réglera sur place la leçon du ' + FP.fmt.day(l.date) + '.', 'info', '#paiements');
+    save();
+    return p;
+  };
+
+  /** Le moniteur (ou l'agence) encaisse sur place. */
+  act.markLessonPaid = (lid, by, method) => {
+    const l = lessonById(lid); if (!l) return { ok: false };
+    const p = ensureLessonPayment(l);
+    if (!p) return { ok: false };
+    if (p.status === 'paye') return { ok: true, already: true, payment: p };
+    markPaid(p.id, method || 'especes', { by: by || 'Moniteur' });
+    logEvent(l.student, 'payment', 'Heure de conduite du ' + FP.fmt.day(l.date) + ' encaissée sur place.', by || 'Moniteur');
+    save();
+    return { ok: true, payment: p };
+  };
+
+  /** Échec de paiement : la réservation est conservée, l'élève peut réessayer. */
+  act.failLessonPayment = (lid, reason) => {
+    const l = lessonById(lid); if (!l) return;
+    const p = ensureLessonPayment(l); if (!p || p.status === 'paye') return;
+    p.lastError = reason || 'Le paiement a été refusé.';
+    p.attempts = (p.attempts || 0) + 1;
+    logEvent(l.student, 'payment', 'Tentative de paiement refusée pour la leçon du ' + FP.fmt.day(l.date) + '.', q.student(l.student).first);
+    save();
+  };
+
+  /** Crée les règlements manquants pour toutes les leçons confirmées. */
+  function syncLessonPayments() {
+    let n = 0;
+    db().lessons.forEach((l) => { if (q.lessonPayable(l) && !q.lessonPayment(l)) { ensureLessonPayment(l); n++; } });
+    return n;
+  }
+  q.syncLessonPayments = syncLessonPayments;
+
+  // Un créneau accepté devient immédiatement réglable
+  wrap('acceptRequest', (res, rid) => {
+    const r = db().requests.find((x) => x.id === rid);
+    if (r && r.lessonId) { const l = lessonById(r.lessonId); if (l) ensureLessonPayment(l); }
+    syncLessonPayments();
+  });
+  wrap('answerCounter', (res, rid, accept) => {
+    if (!accept) return;
+    const r = db().requests.find((x) => x.id === rid);
+    if (r && r.lessonId) { const l = lessonById(r.lessonId); if (l) ensureLessonPayment(l); }
+  });
+  // Une leçon annulée annule son règlement s'il n'a pas été encaissé
+  wrap('cancelLesson', (res, lid) => {
+    const l = lessonById(lid); const p = q.lessonPayment(l);
+    if (p && p.status !== 'paye') { p.status = 'annule'; p.note = 'Leçon annulée'; }
+  });
+
   migrate();
-  FP.gestion = { defaultTemplates, notify, makePayment, markPaid };
+  // Règlements des leçons déjà confirmées, avec quelques cas de démonstration
+  if (syncLessonPayments()) {
+    const pend = db().lessons.filter((l) => q.lessonPayable(l)).sort((a, b) => (a.date + a.start).localeCompare(b.date + b.start));
+    pend.forEach((l, i) => {
+      const p = q.lessonPayment(l); if (!p || p.status === 'paye') return;
+      if (i % 3 === 1) { p.onSite = true; p.method = 'especes'; }
+      else if (i % 3 === 2) markPaid(p.id, i % 2 ? 'cb' : 'applepay', { silent: true, at: D.stampFor(D.addDays(D.todayISO(), -1), '18:' + (10 + (i % 40))) });
+    });
+    FP.store.save();
+  }
+
+  FP.gestion = { defaultTemplates, notify, makePayment, markPaid, ensureLessonPayment, syncLessonPayments };
 })(window);

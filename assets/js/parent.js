@@ -82,7 +82,7 @@
       '<div class="g g-main"><div class="stack"><div class="card"><div class="card-head"><span class="card-title">' + icon('clock') + 'Historique</span></div><div class="hist">' +
       q.history(SID).map((l) => V.histItem(l, { showComment: vis('remarques') && l.shareParent })).join('') + '</div></div></div>' +
       '<div class="stack"><div class="card"><div class="card-head"><span class="card-title">' + icon('calendar') + 'Prochaines leçons</span></div>' +
-      (vis('planning') ? '<div class="lessons">' + (q.upcoming(SID).map((l) => V.lessonRow(l, { action: '<button class="btn btn-ghost btn-xs" data-changeslot="' + l.id + '">' + icon('swap') + 'Autre horaire</button>' })).join('') || '<p class="empty">Aucune leçon à venir.</p>') + '</div>' : hiddenInfo('Le planning')) + '</div>' + V.hoursCard(SID) + '</div></div>';
+      (vis('planning') ? '<div class="lessons">' + (q.upcoming(SID).map((l) => V.lessonRow(l, { action: '<button class="btn btn-primary btn-xs" data-paylesson="' + l.id + '">' + icon('lock') + 'Régler</button><button class="btn btn-ghost btn-xs" data-changeslot="' + l.id + '">' + icon('swap') + 'Autre horaire</button>' })).join('') || '<p class="empty">Aucune leçon à venir.</p>') + '</div>' : hiddenInfo('Le planning')) + '</div>' + V.hoursCard(SID) + '</div></div>';
   }
 
   function code(el) {
@@ -140,6 +140,7 @@
   });
 
   FP.client.handleUploads(() => shell.render(true));
+  FP.client.handleLessonPayments(par().first + ' (parent)', () => shell.render(true));
   FP.client.handlePayments(() => shell.render(true));
 
   document.addEventListener('click', (e) => {

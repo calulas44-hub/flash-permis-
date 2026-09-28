@@ -598,3 +598,19 @@
   .pay-row .grow { flex: 1 1 calc(100% - 56px); }
   .pay-row .pay-amount { margin-left: 56px; }
 }
+
+/* ---------- Paiement d'une heure de conduite ---------- */
+.pay-block { display: flex; flex-direction: column; gap: 12px; }
+.pay-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; padding: 16px; border-radius: 18px; background: var(--bg); }
+.pay-head .amount-hero { font-size: 34px; margin-top: 2px; }
+.pay-block.is-paid .pay-head { background: var(--ok-bg); }
+.pay-confirm { text-align: center; }
+.pay-confirm .amount-hero { margin-top: 10px; }
+.pay-way { display: inline-flex; align-items: center; gap: 8px; padding: 7px 14px; border-radius: 999px; background: var(--night); color: #fff; font-weight: 700; font-size: 13.5px; }
+.pay-way .i { width: 17px; height: 17px; color: var(--volt); }
+
+/* Ligne de leçon : statut, paiement et actions s'organisent sur plusieurs lignes */
+.lesson { flex-wrap: wrap; row-gap: 8px; }
+.lesson-info { flex: 1 1 160px; min-width: 150px; }
+.lesson-side { flex-direction: row; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 6px; text-align: left; }
+@media (max-width: 560px) { .lesson-side { margin-left: 68px; justify-content: flex-start; } }
