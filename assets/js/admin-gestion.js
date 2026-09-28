@@ -355,6 +355,12 @@
   /* ======================================================================
      Réglages
      ====================================================================== */
+  const unpaidLessonCount = () => q.payments().filter((p) => p.lessonId && p.status !== 'paye' && p.status !== 'annule').length;
+  function ratePreview(rateCts) {
+    return [[60, '1 h de conduite'], [90, '1 h 30'], [120, '2 h de conduite']]
+      .map((d) => '<div class="rate-line"><span>' + d[1] + '</span><b>' + eur(Math.round(rateCts * (d[0] / 60))) + '</b></div>').join('');
+  }
+
   V.reglages = (el) => {
     const a = db().auth, s = db().settings;
     el.innerHTML =
@@ -370,6 +376,15 @@
       '<p class="small muted mt">' + (a.updatedAt ? 'Dernière modification : ' + fmt.ago(a.updatedAt).toLowerCase() + '.' : 'Code d’origine, jamais modifié.') + '</p>' +
       '<p class="note note-volt mt">' + icon('alert') + '<span><strong>Important :</strong> sur un site sans serveur, ce code est visible dans le code source par une personne avertie. Il protège des regards, pas d’une intrusion. Une vraie authentification nécessite un serveur.</span></p></div>' +
       '<div class="stack">' +
+      '<div class="card"><div class="card-head"><span class="card-title">' + icon('car') + 'Tarif des heures de conduite</span><span class="editable-tag">' + icon('edit') + 'Modifiable</span></div>' +
+      '<form id="rate-form">' +
+      '<label class="field"><span>Prix d’une heure de conduite (€ TTC)</span>' +
+      '<input class="input" type="number" name="hourRate" id="rate-input" min="0" max="500" step="0.5" value="' + (s.hourRate / 100).toFixed(2) + '"></label>' +
+      '<div class="rate-preview" id="rate-preview">' + ratePreview(s.hourRate) + '</div>' +
+      '<button class="btn btn-dark btn-block mt" type="submit">' + icon('check') + 'Enregistrer le tarif</button></form>' +
+      '<p class="note mt">' + icon('info') + '<span>Ce tarif s’applique à chaque heure de conduite réservée. Les leçons <b>déjà payées gardent leur montant</b> ; celles encore en attente de paiement sont recalculées automatiquement.</span></p>' +
+      (unpaidLessonCount() ? '<p class="small muted" style="margin-top:6px">' + unpaidLessonCount() + ' leçon(s) en attente de paiement seront mises à jour.</p>' : '') +
+      '</div>' +
       '<div class="card"><div class="card-head"><span class="card-title">' + icon('trophy') + 'Facturation</span></div>' +
       '<form id="settings-form" class="form-grid">' +
       '<label class="field"><span>Taux de TVA appliqué (%)</span><input class="input" type="number" name="tvaRate" min="0" max="30" step="0.1" value="' + s.tvaRate + '"></label>' +
@@ -457,6 +472,14 @@
     }
   });
 
+  document.addEventListener('input', (e) => {
+    if (e.target.id === 'rate-input') {
+      const prev = document.getElementById('rate-preview');
+      const v = parseFloat(e.target.value);
+      if (prev && v > 0) prev.innerHTML = ratePreview(Math.round(v * 100));
+    }
+  });
+
   document.addEventListener('change', (e) => {
     if (e.target.id === 'acc-from') { st.from = e.target.value; rerender(); }
     if (e.target.id === 'acc-to') { st.to = e.target.value; rerender(); }
@@ -474,6 +497,14 @@
       try { sessionStorage.setItem('fp.admin.ok', '1'); } catch (err) { /* ignore */ }
       FP.toast('Code d’accès modifié. Il sera demandé à la prochaine ouverture.');
       e.target.reset();
+    }
+    if (e.target.id === 'rate-form') {
+      e.preventDefault();
+      const v = parseFloat(new FormData(e.target).get('hourRate'));
+      if (!(v > 0) || v > 500) { FP.toast('Indiquez un tarif compris entre 1 et 500 €.', 'warn'); return; }
+      const r = act.setHourRate(v);
+      FP.toast('Tarif enregistré : ' + eur(Math.round(v * 100)) + ' de l’heure.' + (r.updated ? ' ' + r.updated + ' leçon(s) recalculée(s).' : ''));
+      return;
     }
     if (e.target.id === 'settings-form') {
       e.preventDefault();

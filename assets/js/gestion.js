@@ -779,6 +779,26 @@
     save();
   };
 
+  /**
+   * Modifie le tarif horaire. Les leçons déjà payées gardent leur montant ;
+   * celles encore en attente sont réalignées sur le nouveau tarif.
+   */
+  act.setHourRate = (rateEur) => {
+    const cts = Math.round(parseFloat(String(rateEur).replace(',', '.')) * 100);
+    if (!(cts > 0)) return { updated: 0 };
+    db().settings.hourRate = cts;
+    let updated = 0;
+    db().lessons.forEach((l) => {
+      const p = q.lessonPayment(l);
+      if (!p || p.status === 'paye' || p.status === 'annule' || p.paidCts > 0) return;
+      const next = q.lessonPrice(l);
+      if (next !== p.amountCts) { p.amountCts = next; updated++; }
+    });
+    act.log('Tarif horaire de conduite fixé à ' + eur(cts) + '.' + (updated ? ' ' + updated + ' leçon(s) recalculée(s).' : ''));
+    save();
+    return { updated };
+  };
+
   /** Crée les règlements manquants pour toutes les leçons confirmées. */
   function syncLessonPayments() {
     let n = 0;

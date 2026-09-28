@@ -80,7 +80,7 @@ Le règlement n’apparaît qu’une fois le créneau **accepté par l’élève
 
 **Parcours sur place** — l’élève choisit « Paiement sur place », la réservation reste confirmée, puis le moniteur encaisse depuis son téléphone (*Marquer le paiement comme effectué*) et le statut passe à « Payée » des deux côtés.
 
-Le tarif horaire se règle dans **Administration › Réglages** (50 € par défaut). Ces règlements alimentent automatiquement la caisse, les tickets et la comptabilité. Pour ajouter un moyen de paiement, il suffit d’une entrée dans le tableau `WAYS` de `assets/js/espace-client.js`.
+Le tarif horaire se règle dans **Administration › Réglages › Tarif des heures de conduite** (50 € par défaut), avec un aperçu immédiat du prix d’une leçon de 1 h, 1 h 30 et 2 h. Les leçons déjà payées conservent leur montant ; celles en attente de paiement sont recalculées automatiquement. Ces règlements alimentent automatiquement la caisse, les tickets et la comptabilité. Pour ajouter un moyen de paiement, il suffit d’une entrée dans le tableau `WAYS` de `assets/js/espace-client.js`.
 
 ## Historique et traçabilité
 
