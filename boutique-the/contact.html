@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Contact — Florelle</title>
+<meta name="description" content="Contactez Florelle : une question sur un thé, une commande ou un cadeau.">
+<meta name="theme-color" content="#FFE4D1">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Florelle">
+<meta property="og:locale" content="fr_FR">
+<meta property="og:title" content="Contact — Florelle">
+<meta property="og:description" content="Contactez Florelle : une question sur un thé, une commande ou un cadeau.">
+<meta property="og:image" content="https://images.unsplash.com/photo-1563822249366-3efb23b8e0c9?auto=format&fit=crop&w=1200&h=630&q=75">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://images.unsplash.com" crossorigin>
+<link rel="preload" href="assets/fonts/poppins-300.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body data-page="contact">
+<div id="site-entete"></div>
+<main id="contenu" tabindex="-1">
+<section class="bandeau-page"><div class="page">
+  <nav class="fil" aria-label="Fil d'Ariane"><a href="index.html">Accueil</a> › <span aria-current="page">Contact</span></nav>
+  <h1>Contact</h1>
+  <p>Une question sur un thé, une commande, un cadeau ? Nous vous répondons avec plaisir.</p>
+</div></section>
+
+<div class="page">
+  <div class="commande">
+    <form id="form-contact" class="formulaire" name="contact" method="POST" data-netlify="true" netlify-honeypot="bot-field" novalidate>
+      <input type="hidden" name="form-name" value="contact">
+      <p hidden><label>Ne pas remplir <input name="bot-field"></label></p>
+      <div class="rangee">
+        <div class="champ"><label for="c-nom">Votre nom</label><input id="c-nom" name="nom" autocomplete="name" required aria-describedby="e-nom"><p class="erreur" id="e-nom"><span data-icone="alerte"></span><span>Indiquez votre nom.</span></p></div>
+        <div class="champ"><label for="c-email">Votre e-mail</label><input id="c-email" name="email" type="email" autocomplete="email" required aria-describedby="e-email"><p class="erreur" id="e-email"><span data-icone="alerte"></span><span>Indiquez une adresse e-mail valide.</span></p></div>
+      </div>
+      <div class="champ"><label for="c-sujet">Sujet</label><select id="c-sujet" name="sujet">
+        <option>Une question sur un thé</option><option>Ma commande</option><option>Un cadeau, une commande groupée</option><option>Autre chose</option></select></div>
+      <div class="champ"><label for="c-message">Votre message</label><textarea id="c-message" name="message" required aria-describedby="e-message"></textarea><p class="erreur" id="e-message"><span data-icone="alerte"></span><span>Votre message est un peu court (10 caractères minimum).</span></p></div>
+      <div id="message-contact" role="status" hidden></div>
+      <button type="submit" class="btn btn--plein">Envoyer le message</button>
+      <p class="discret" style="font-size:13px;margin:0">Vos coordonnées servent uniquement à vous répondre. <a href="confidentialite.html">En savoir plus</a></p>
+    </form>
+    <aside class="recap">
+      <h2>Nous écrire</h2>
+      <p><span data-icone="mail" style="display:inline-block;width:20px;vertical-align:-4px;margin-right:6px"></span><a href="mailto:bonjour@florelle.fr" data-config="contact.email">bonjour@florelle.fr</a></p>
+      <p>Nous répondons <span data-config="contact.horaires">du lundi au vendredi</span>.</p>
+      <h2 style="margin-top:26px">Avant d'écrire</h2>
+      <ul style="padding-left:1.1em;margin:0">
+        <li><a href="faq.html">Questions fréquentes</a></li>
+        <li><a href="livraison-retours.html">Livraison & retours</a></li>
+        <li><a href="conseils.html">Conseils de préparation</a></li>
+      </ul>
+    </aside>
+  </div>
+</div>
+</main>
+<div id="site-pied"></div>
+<noscript><p style="padding:16px;text-align:center;background:#FFF6D6">Le panier et la commande nécessitent JavaScript. Pour commander sans, écrivez-nous à bonjour@florelle.fr.</p></noscript>
+<script src="assets/js/config.js"></script>
+<script src="assets/js/catalogue.js"></script>
+<script src="assets/js/illustrations.js"></script>
+<script src="assets/js/app.js"></script>
+<script src="assets/js/pages.js"></script>
+</body>
+</html>

@@ -1,0 +1,6 @@
+User-agent: *
+Disallow: /panier.html
+Disallow: /commande.html
+Disallow: /confirmation.html
+# Remplacez l'adresse par celle de votre site :
+Sitemap: https://www.exemple.fr/sitemap.xml

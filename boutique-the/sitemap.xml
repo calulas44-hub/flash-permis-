@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Remplacez https://www.exemple.fr par l'adresse de votre site. -->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://www.exemple.fr/</loc></url>
+  <url><loc>https://www.exemple.fr/boutique.html</loc></url>
+  <url><loc>https://www.exemple.fr/histoire.html</loc></url>
+  <url><loc>https://www.exemple.fr/conseils.html</loc></url>
+  <url><loc>https://www.exemple.fr/faq.html</loc></url>
+  <url><loc>https://www.exemple.fr/contact.html</loc></url>
+  <url><loc>https://www.exemple.fr/livraison-retours.html</loc></url>
+  <url><loc>https://www.exemple.fr/cgv.html</loc></url>
+  <url><loc>https://www.exemple.fr/mentions-legales.html</loc></url>
+  <url><loc>https://www.exemple.fr/confidentialite.html</loc></url>
+  <url><loc>https://www.exemple.fr/boutique.html?categorie=thes-verts</loc></url>
+  <url><loc>https://www.exemple.fr/boutique.html?categorie=thes-noirs</loc></url>
+  <url><loc>https://www.exemple.fr/boutique.html?categorie=blancs-oolongs</loc></url>
+  <url><loc>https://www.exemple.fr/boutique.html?categorie=infusions</loc></url>
+  <url><loc>https://www.exemple.fr/boutique.html?categorie=coffrets</loc></url>
+  <url><loc>https://www.exemple.fr/boutique.html?categorie=accessoires</loc></url>
+  <url><loc>https://www.exemple.fr/produit.html?id=sencha</loc></url>
+  <url><loc>https://www.exemple.fr/produit.html?id=gunpowder-menthe</loc></url>
+  <url><loc>https://www.exemple.fr/produit.html?id=jasmin</loc></url>
+  <url><loc>https://www.exemple.fr/produit.html?id=matcha</loc></url>
+  <url><loc>https://www.exemple.fr/produit.html?id=darjeeling</loc></url>
+  <url><loc>https://www.exemple.fr/produit.html?id=assam</loc></url>
+  <url><loc>https://www.exemple.fr/produit.html?id=earl-grey</loc></url>
+  <url><loc>https://www.exemple.fr/produit.html?id=chai</loc></url>
+  <url><loc>https://www.exemple.fr/produit.html?id=pai-mu-tan</loc></url>
+  <url><loc>https://www.exemple.fr/produit.html?id=tie-guan-yin</loc></url>
+  <url><loc>https://www.exemple.fr/produit.html?id=hibiscus</loc></url>
+  <url><loc>https://www.exemple.fr/produit.html?id=douce-soiree</loc></url>
+  <url><loc>https://www.exemple.fr/produit.html?id=rooibos-orange-vanille</loc></url>
+  <url><loc>https://www.exemple.fr/produit.html?id=coffret-decouverte</loc></url>
+  <url><loc>https://www.exemple.fr/produit.html?id=boule-infuseur</loc></url>
+  <url><loc>https://www.exemple.fr/produit.html?id=theiere-verre</loc></url>
+</urlset>
